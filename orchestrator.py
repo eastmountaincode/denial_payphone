@@ -14,7 +14,7 @@ if UTIL_DIR not in sys.path:
     sys.path.insert(0, UTIL_DIR)
 
 from log import log_event 
-from audio import play_audio_file
+from audio import play_audio_file, listen_for_amplitude
 import general_util
 
 ROOT_DIR = "/home/denial/denial_payphone/payphone"
@@ -38,6 +38,14 @@ def run_session():
 
     try:
         play_audio_file("hello_payphone.wav", AUDIO_DIR)
+        heard = listen_for_amplitude(threshold=0.02, timeout=6)
+
+        if heard:
+            log_event(session_id, "amplitude_detected_after_intro")
+            play_audio_file("post_intro_user_did_speak.wav", AUDIO_DIR)
+        else:
+            log_event(session_id, "no_amplitude_detected_after_intro")
+            play_audio_file("post_intro_user_did_not_speak.wav", AUDIO_DIR)
 
         log_event(session_id, "session_end")
     except Exception as e:
