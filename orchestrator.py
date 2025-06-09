@@ -5,6 +5,7 @@ import os
 from datetime import datetime
 import sys
 import time
+import sounddevice as sd
 
 # In-house libraries
 
@@ -27,6 +28,7 @@ Orchestrator is responsible for logging.
 session - dict: acts as state
 '''
 def run_session():
+    # SESSION SETUP
     #session_id = f"session_{uuid.uuid4().hex[:8]}"
     session_id = "session_1234"
     session = {
@@ -36,9 +38,12 @@ def run_session():
     session["folder"] = general_util.create_session_folder(session_id, ROOT_DIR)
     log_event(session_id, "session_start", session["folder"])
 
+    # MAIN EXECUTION
     try:
-        play_audio_file("hello_payphone.wav", AUDIO_DIR)
-        heard = listen_for_amplitude(threshold=0.02, timeout=6)
+        play_audio_file("intro_prompt.wav", AUDIO_DIR)
+        sd.wait() # finish playback until checking for amplitude
+
+        heard = listen_for_amplitude(threshold=0.1, timeout=6)
 
         if heard:
             log_event(session_id, "amplitude_detected_after_intro")
@@ -64,6 +69,5 @@ if __name__ == "__main__":
         orchestrator_loop()
     except KeyboardInterrupt:
         print("\nShutting down gracefully (Ctrl+C detected).")
-        log_event("SYSTEM", "shutdown", "KeyboardInterrupt (Ctrl+C)")
         sys.exit(0)
 

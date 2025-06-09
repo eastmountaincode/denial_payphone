@@ -1,7 +1,7 @@
 import os
 import sounddevice as sd
 import soundfile as sf
-import numpy 
+import numpy as np 
 import time
 
 def play_audio_file(filename, AUDIO_DIR):
