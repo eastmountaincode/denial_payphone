@@ -17,6 +17,7 @@ from log import log_event
 from audio import play_audio_file, listen_for_amplitude
 import general_util
 from proximity import is_on_hook
+from vosk_transcribe import vosk_transcribe
 
 LISTEN_FOR_AMPL_THRESH = 0.10
 
@@ -27,7 +28,7 @@ VOSK_BLOCK       = 4800
 VOSK_SILENCE_BLOCKS = 30      # 3 seconds
 
 
-def run_session(sensor, ROOT_DIR, AUDIO_DIR):
+def run_session(sensor, ROOT_DIR, AUDIO_DIR, vosk_model):
     """
     Run a single user session.
     - sensor: the initialized proximity sensor object
@@ -44,8 +45,6 @@ def run_session(sensor, ROOT_DIR, AUDIO_DIR):
     session["folder"] = general_util.create_session_folder(session_id, ROOT_DIR)
     log_event(session_id, "session_start", session["folder"])
 
-
-    model = Model(VOSK_MODEL_PATH)
     try:
         finished = play_audio_file("intro_prompt.wav", AUDIO_DIR, lambda: is_on_hook(sensor))
         if not finished:
@@ -73,6 +72,17 @@ def run_session(sensor, ROOT_DIR, AUDIO_DIR):
                 log_event(session_id, "session_interrupted_by_on_hook", "User hung up during post-intro no-speak response.")
                 print("Session interrupted (on-hook during response).")
                 return
+        
+        log_event(session_id, "starting_transcription_1")
+        transcript = vosk_transcribe(
+            vosk_model,
+            device=VOSK_DEVICE,
+            samplerate=VOSK_SR,
+            blocksize=VOSK_BLOCK,
+            max_silence_blocks=VOSK_SILENCE_BLOCKS,
+            on_hook_check=lambda: is_on_hook(sensor)
+        )
+        log_event(session_id, "transcription_result", transcript)
 
         log_event(session_id, "session_end")
     except Exception as e:
