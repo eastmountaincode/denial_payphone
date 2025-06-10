@@ -3,7 +3,7 @@ import board
 import adafruit_vcnl4200
 
 # ---- Constants ----
-PROXIMITY_THRESHOLD = 223       # >= this is ON HOOK; < this is OFF HOOK
+PROXIMITY_THRESHOLD = 200       # >= this is ON HOOK; < this is OFF HOOK
 OFF_HOOK_REQUIRED_DURATION = 2.0  # seconds proximity must stay low to count as off-hook
 ON_HOOK_REQUIRED_DURATION = 2.0   # seconds proximity must stay high to count as on-hook
 POLL_INTERVAL = 0.1               # seconds between sensor polls
@@ -23,6 +23,8 @@ def wait_for_off_hook(sensor):
     start_time = None
     while True:
         prox = sensor.proximity
+        print(f"\rProximity: {prox}", end="", flush=True)
+
         if prox < PROXIMITY_THRESHOLD:
             if start_time is None:
                 start_time = time.time()

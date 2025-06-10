@@ -1,11 +1,22 @@
 # run_session.py
 
 from datetime import datetime
+import os
+import sys
+
+# normally we invoke run_session from Orchestrator, but in case we 
+# want to invoke run_session directly, this patch will facilitate that
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+UTIL_DIR = os.path.join(BASE_DIR, "util")
+if UTIL_DIR not in sys.path:
+    sys.path.insert(0, UTIL_DIR)
 
 from log import log_event
 from audio import play_audio_file, listen_for_amplitude
 import general_util
 from proximity import is_on_hook
+
+LISTEN_FOR_AMPL_THRESH = 0.08
 
 def run_session(sensor, ROOT_DIR, AUDIO_DIR):
     """
@@ -30,7 +41,7 @@ def run_session(sensor, ROOT_DIR, AUDIO_DIR):
             print("Session interrupted (on-hook during prompt).")
             return
 
-        heard = listen_for_amplitude(threshold=0.1, timeout=6, is_on_hook=lambda: is_on_hook(sensor))
+        heard = listen_for_amplitude(threshold=LISTEN_FOR_AMPL_THRESH, timeout=6, is_on_hook=lambda: is_on_hook(sensor))
         if heard is None:
             log_event(session_id, "session_interrupted_by_on_hook", "User hung up during listen_for_amplitude.")
             print("Session interrupted (on-hook during listen).")
@@ -40,14 +51,14 @@ def run_session(sensor, ROOT_DIR, AUDIO_DIR):
             log_event(session_id, "amplitude_detected_after_intro")
             finished = play_audio_file("post_intro_user_did_speak.wav", AUDIO_DIR, lambda: is_on_hook(sensor))
             if not finished:
-                log_event(session_id, "session_interrupted_by_on_hook", "User hung up during response.")
+                log_event(session_id, "session_interrupted_by_on_hook", "User hung up during post-intro response.")
                 print("Session interrupted (on-hook during response).")
                 return
         else:
             log_event(session_id, "no_amplitude_detected_after_intro")
             finished = play_audio_file("post_intro_user_did_not_speak.wav", AUDIO_DIR, lambda: is_on_hook(sensor))
             if not finished:
-                log_event(session_id, "session_interrupted_by_on_hook", "User hung up during no-speak response.")
+                log_event(session_id, "session_interrupted_by_on_hook", "User hung up during post-intro no-speak response.")
                 print("Session interrupted (on-hook during response).")
                 return
 
