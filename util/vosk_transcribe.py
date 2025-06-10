@@ -18,7 +18,7 @@ def vosk_transcribe(vosk_model, max_initial_silence=6, on_hook_check=None):
     Start real-time transcription with Vosk, stops after silence or on-hook.
     Returns: final transcript (str)
     """
-    rec = KaldiRecognizer(vosk_model, samplerate)
+    rec = KaldiRecognizer(vosk_model, VOSK_SR)
     audio_q = queue.Queue()
     heard_speech = False
     silence_count = 0
@@ -39,7 +39,7 @@ def vosk_transcribe(vosk_model, max_initial_silence=6, on_hook_check=None):
             blocksize=VOSK_BLOCKSIZE,
             dtype='int16',
             channels=1,
-            device=DEVICE,
+            device=VOSK_DEVICE,
             callback=cb):
         try:
             while True:

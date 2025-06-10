@@ -19,7 +19,7 @@ from general_util import create_session_folder, play_and_log, generate_unique_se
 from proximity import is_on_hook
 from vosk_transcribe import vosk_transcribe
 
-LISTEN_FOR_AMPL_THRESH = 0.09
+LISTEN_FOR_AMPL_THRESH = 0.07
 
 VOSK_MODEL_PATH  = "/home/denial/denial_payphone/vosk/models/vosk-model-small-en-us-0.15"
 VOSK_DEVICE      = 1          
