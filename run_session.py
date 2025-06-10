@@ -15,7 +15,7 @@ if UTIL_DIR not in sys.path:
 
 from log import log_event
 from audio import play_audio_file, listen_for_amplitude
-import general_util
+from general_util import create_session_folder, play_and_log, generate_unique_session_id 
 from proximity import is_on_hook
 from vosk_transcribe import vosk_transcribe
 
@@ -46,10 +46,7 @@ def run_session(sensor, ROOT_DIR, AUDIO_DIR, vosk_model):
     log_event(session_id, "session_start", session["folder"])
 
     try:
-        finished = play_audio_file("intro_prompt.wav", AUDIO_DIR, lambda: is_on_hook(sensor))
-        if not finished:
-            log_event(session_id, "session_interrupted_by_on_hook", "User hung up during intro prompt.")
-            print("Session interrupted (on-hook during prompt).")
+        if not play_and_log("intro_prompt.wav", AUDIO_DIR, sensor, session_id, log_event, "intro prompt"):
             return
 
         heard = listen_for_amplitude(threshold=LISTEN_FOR_AMPL_THRESH, timeout=6, is_on_hook=lambda: is_on_hook(sensor))
@@ -60,19 +57,21 @@ def run_session(sensor, ROOT_DIR, AUDIO_DIR, vosk_model):
 
         if heard:
             log_event(session_id, "amplitude_detected_after_intro")
-            finished = play_audio_file("post_intro_user_did_speak.wav", AUDIO_DIR, lambda: is_on_hook(sensor))
-            if not finished:
-                log_event(session_id, "session_interrupted_by_on_hook", "User hung up during post-intro response.")
-                print("Session interrupted (on-hook during response).")
+            if not play_and_log("post_intro_user_did_speak.wav", AUDIO_DIR, sensor, session_id, log_event, "post-intro response"):
                 return
         else:
             log_event(session_id, "no_amplitude_detected_after_intro")
-            finished = play_audio_file("post_intro_user_did_not_speak.wav", AUDIO_DIR, lambda: is_on_hook(sensor))
-            if not finished:
-                log_event(session_id, "session_interrupted_by_on_hook", "User hung up during post-intro no-speak response.")
-                print("Session interrupted (on-hook during response).")
+            if not play_and_log("post_intro_user_did_not_speak.wav",
+                                 AUDIO_DIR,
+                                 sensor,
+                                 session_id,
+                                 log_event,
+                                "post-intro no-speak response"):
                 return
-        
+
+        if not play_and_log("pockets_prompt.wav", AUDIO_DIR, sensor, session_id, log_event, "pockets prompt"):
+            return
+
         log_event(session_id, "starting_transcription_1")
         transcript = vosk_transcribe(
             vosk_model,
@@ -83,7 +82,24 @@ def run_session(sensor, ROOT_DIR, AUDIO_DIR, vosk_model):
             on_hook_check=lambda: is_on_hook(sensor)
         )
         log_event(session_id, "transcription_result", transcript)
-        
+
+        if not transcript.strip():
+            log_event(session_id, "pockets_no_speech_detected")
+            if not play_and_log("pockets_user_did_not_respond.wav",
+                                 AUDIO_DIR,
+                                 sensor,
+                                 session_id,
+                                 log_event,
+                                "pockets no-response message"):
+                return
+        else:
+            log_event(session_id, "pockets_user_responded", transcript)
+            if not play_and_log("pockets_user_responded.wav", AUDIO_DIR, sensor, session_id, log_event, "pockets response message"):
+                return
+            response_path = os.path.join(session["folder"], "pockets_transcript.txt")
+            with open(response_path, "w") as f:
+                f.write(transcript.strip())
+            log_event(session_id, "saved_transcript", response_path)
 
         log_event(session_id, "session_end")
     except Exception as e:

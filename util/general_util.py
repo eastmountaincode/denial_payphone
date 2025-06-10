@@ -18,3 +18,12 @@ def generate_unique_session_id(ROOT_DIR):
         session_folder = os.path.join(sessions_root, session_id)
         if not os.path.exists(session_folder):
             return session_id
+
+def play_and_log(audio_file, audio_dir, sensor, session_id, log_event, interrupt_reason):
+    finished = play_audio_file(audio_file, audio_dir, lambda: is_on_hook(sensor))
+    if not finished:
+        log_event(session_id, "session_interrupted_by_on_hook", interrupt_reason)
+        print(f"Session interrupted (on-hook during audio I/O).")
+        return False
+    return True
+
