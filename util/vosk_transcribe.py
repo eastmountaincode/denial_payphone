@@ -5,8 +5,9 @@ import json
 import sounddevice as sd
 import numpy as np
 from vosk import KaldiRecognizer
+import time
 
-def vosk_transcribe(vosk_model, device, samplerate, blocksize, max_silence_blocks, prompt_text=None, on_hook_check=None):
+def vosk_transcribe(vosk_model, device, samplerate, blocksize, max_silence_blocks, max_initial_silence=6, on_hook_check=None):
     """
     Start real-time transcription with Vosk, stops after silence or on-hook.
     Returns: final transcript (str)
@@ -16,6 +17,7 @@ def vosk_transcribe(vosk_model, device, samplerate, blocksize, max_silence_block
     heard_speech = False
     silence_count = 0
     result_text = ""
+    start_time = time.time()
 
     def is_silence(data, threshold=500):
         audio = np.frombuffer(data, dtype=np.int16)
@@ -36,10 +38,18 @@ def vosk_transcribe(vosk_model, device, samplerate, blocksize, max_silence_block
         try:
             while True:
                 data = audio_q.get()
+                now = time.time()
+
                 # On-hook check
                 if on_hook_check is not None and on_hook_check():
                     print("Session interrupted (on-hook during transcription).")
                     return result_text
+
+                # Move on if initial silence is too long
+                if not heard_speech and (now - start_time > max_initial_silence):
+                    print(f"No speech detected after {max_initial_silence} seconds, exiting transcription.")
+                    return ""
+ 
                 if rec.AcceptWaveform(data):
                     result = json.loads(rec.Result())
                     txt = result.get("text", "")

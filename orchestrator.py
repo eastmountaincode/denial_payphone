@@ -50,7 +50,7 @@ class Orchestrator:
             print("On-hook detected. Returning to initial state...\n")
             play_audio_file("exit_sfx.wav", AUDIO_DIR)
 
-            time.sleep(2)
+            time.sleep(1)
 
 if __name__ == "__main__":
     try:
