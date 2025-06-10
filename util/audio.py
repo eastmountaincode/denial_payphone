@@ -9,7 +9,7 @@ AUDIO_DEVICE_IN = 1
 SAMPLE_RATE = 48000
 
 
-def play_audio_file(filename, AUDIO_DIR, is_on_hook: callable, chunk_size=2048):
+def play_audio_file(filename, AUDIO_DIR, is_on_hook: callable = None, chunk_size=2048):
     """
     Play a .wav file in small chunks, checking is_on_hook() between each.
     Returns True if playback completed, False if interrupted (on-hook).
@@ -34,7 +34,7 @@ def play_audio_file(filename, AUDIO_DIR, is_on_hook: callable, chunk_size=2048):
             end = min(start + chunk_size, len(data))
             stream.write(data[start:end])
             start = end
-            if is_on_hook():
+            if is_on_hook and is_on_hook():
                 stream.abort()
                 return False
     return True
