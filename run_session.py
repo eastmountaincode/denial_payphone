@@ -18,6 +18,7 @@ from audio import play_audio_file, listen_for_amplitude
 from general_util import create_session_folder, play_and_log, generate_unique_session_id 
 from proximity import is_on_hook
 from vosk_transcribe import vosk_transcribe
+from pv_keyword import wait_for_keyword_response
 
 LISTEN_FOR_AMPL_THRESH = 0.07
 
@@ -27,6 +28,7 @@ VOSK_SR          = 48000
 VOSK_BLOCK       = 4800
 VOSK_SILENCE_BLOCKS = 30      # 3 seconds
 
+MAX_KEYWORD_ATTEMPTS = 5
 
 def run_session(sensor, ROOT_DIR, AUDIO_DIR, vosk_model):
     """
@@ -86,6 +88,30 @@ def run_session(sensor, ROOT_DIR, AUDIO_DIR, vosk_model):
 
         if not play_and_log("confession_prompt_for_kw.wav", AUDIO_DIR, sensor, session_id, "confession_prompt_for_kw"):
             return
+
+        attempts = 0
+        while attempts < MAX_KEYWORD_ATTEMPTS:
+            keyword_result = wait_for_keyword_response(sensor, on_hook_check=lambda: is_on_hook(sensor))
+            if keyword_result == "on_hook":
+                log_event(session_id, "session_interrupted_by_on_hook", "User hung up during keyword detection.")
+                print("Session interrupted (on-hook during keyword detection).")
+                return
+            elif keyword_result in ("affirmative", "negative"):
+                log_event(session_id, "keyword_result", keyword_result)
+                break
+            else:  # not_understood
+                attempts += 1
+                log_event(session_id, "keyword_not_understood", f"Attempt {attempts}")
+                if not play_and_log("confession_kw_misunderstood.wav", AUDIO_DIR, sensor, session_id, "keyword not understood"):
+                    return
+        else:
+            log_event(session_id, "keyword_max_attempts_reached")
+            # Max keyword attempts
+            if not play_and_log("kw_failed.wav", AUDIO_DIR, sensor, session_id, "keyword max attempts"):
+                return
+        
+        if keyword_result == "negative":
+            if not play_and_log("")
 
         log_event(session_id, "session_end")
     except Exception as e:
