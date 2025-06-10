@@ -19,7 +19,7 @@ from general_util import create_session_folder, play_and_log, generate_unique_se
 from proximity import is_on_hook
 from vosk_transcribe import vosk_transcribe
 
-LISTEN_FOR_AMPL_THRESH = 0.10
+LISTEN_FOR_AMPL_THRESH = 0.09
 
 VOSK_MODEL_PATH  = "/home/denial/denial_payphone/vosk/models/vosk-model-small-en-us-0.15"
 VOSK_DEVICE      = 1          
@@ -42,11 +42,11 @@ def run_session(sensor, ROOT_DIR, AUDIO_DIR, vosk_model):
         "session_id": session_id,
         "start_time": datetime.now().isoformat()
     }
-    session["folder"] = general_util.create_session_folder(session_id, ROOT_DIR)
+    session["folder"] = create_session_folder(session_id, ROOT_DIR)
     log_event(session_id, "session_start", session["folder"])
 
     try:
-        if not play_and_log("intro_prompt.wav", AUDIO_DIR, sensor, session_id, log_event, "intro prompt"):
+        if not play_and_log("intro_prompt.wav", AUDIO_DIR, sensor, session_id, "intro prompt"):
             return
 
         heard = listen_for_amplitude(threshold=LISTEN_FOR_AMPL_THRESH, timeout=6, is_on_hook=lambda: is_on_hook(sensor))
@@ -57,44 +57,27 @@ def run_session(sensor, ROOT_DIR, AUDIO_DIR, vosk_model):
 
         if heard:
             log_event(session_id, "amplitude_detected_after_intro")
-            if not play_and_log("post_intro_user_did_speak.wav", AUDIO_DIR, sensor, session_id, log_event, "post-intro response"):
+            if not play_and_log("post_intro_user_did_speak.wav", AUDIO_DIR, sensor, session_id, "post-intro response"):
                 return
         else:
             log_event(session_id, "no_amplitude_detected_after_intro")
-            if not play_and_log("post_intro_user_did_not_speak.wav",
-                                 AUDIO_DIR,
-                                 sensor,
-                                 session_id,
-                                 log_event,
-                                "post-intro no-speak response"):
+            if not play_and_log("post_intro_user_did_not_speak.wav", AUDIO_DIR, sensor, session_id, "post-intro no-speak response"):
                 return
 
-        if not play_and_log("pockets_prompt.wav", AUDIO_DIR, sensor, session_id, log_event, "pockets prompt"):
+        if not play_and_log("pockets_prompt.wav", AUDIO_DIR, sensor, session_id, "pockets prompt"):
             return
 
         log_event(session_id, "starting_transcription_1")
-        transcript = vosk_transcribe(
-            vosk_model,
-            device=VOSK_DEVICE,
-            samplerate=VOSK_SR,
-            blocksize=VOSK_BLOCK,
-            max_silence_blocks=VOSK_SILENCE_BLOCKS,
-            on_hook_check=lambda: is_on_hook(sensor)
-        )
+        transcript = vosk_transcribe(vosk_model, on_hook_check=lambda: is_on_hook(sensor))
         log_event(session_id, "transcription_result", transcript)
 
         if not transcript.strip():
             log_event(session_id, "pockets_no_speech_detected")
-            if not play_and_log("pockets_user_did_not_respond.wav",
-                                 AUDIO_DIR,
-                                 sensor,
-                                 session_id,
-                                 log_event,
-                                "pockets no-response message"):
+            if not play_and_log("pockets_user_did_not_respond.wav", AUDIO_DIR, sensor, session_id, "pockets no-response message"):
                 return
         else:
             log_event(session_id, "pockets_user_responded", transcript)
-            if not play_and_log("pockets_user_responded.wav", AUDIO_DIR, sensor, session_id, log_event, "pockets response message"):
+            if not play_and_log("pockets_user_responded.wav", AUDIO_DIR, sensor, session_id, "pockets response message"):
                 return
             response_path = os.path.join(session["folder"], "pockets_transcript.txt")
             with open(response_path, "w") as f:

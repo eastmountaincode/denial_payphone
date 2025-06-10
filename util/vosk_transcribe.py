@@ -7,7 +7,13 @@ import numpy as np
 from vosk import KaldiRecognizer
 import time
 
-def vosk_transcribe(vosk_model, device, samplerate, blocksize, max_silence_blocks, max_initial_silence=6, on_hook_check=None):
+VOSK_DEVICE         = 1          
+VOSK_SR             = 48000
+VOSK_BLOCKSIZE      = 4800
+MAX_SILENCE_BLOCKS = 30      # 3 seconds
+
+
+def vosk_transcribe(vosk_model, max_initial_silence=6, on_hook_check=None):
     """
     Start real-time transcription with Vosk, stops after silence or on-hook.
     Returns: final transcript (str)
@@ -29,11 +35,11 @@ def vosk_transcribe(vosk_model, device, samplerate, blocksize, max_silence_block
         audio_q.put(bytes(indata))
 
     with sd.RawInputStream(
-            samplerate=samplerate,
-            blocksize=blocksize,
+            samplerate=VOSK_SR,
+            blocksize=VOSK_BLOCKSIZE,
             dtype='int16',
             channels=1,
-            device=device,
+            device=DEVICE,
             callback=cb):
         try:
             while True:
@@ -61,7 +67,7 @@ def vosk_transcribe(vosk_model, device, samplerate, blocksize, max_silence_block
                 elif heard_speech:
                     if is_silence(data):
                         silence_count += 1
-                        if silence_count >= max_silence_blocks:
+                        if silence_count >= MAX_SILENCE_BLOCKS:
                             print("(Detected silence after speech, stopping…)\n")
                             break
                     else:
