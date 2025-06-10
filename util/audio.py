@@ -33,7 +33,7 @@ def play_audio_file(filename, AUDIO_DIR, is_on_hook: callable, chunk_size=2048):
                 return False
     return True
 
-def listen_for_amplitude(threshold=0.02, timeout=6, samplerate=44100, blocksize=1024, is_on_hook: callable):
+def listen_for_amplitude(threshold, timeout, samplerate=44100, blocksize=1024, is_on_hook: callable):
     """
     Listen for any sound above a threshold on the default mic,
     checking is_on_hook() between blocks.

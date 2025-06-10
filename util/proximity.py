@@ -48,3 +48,10 @@ def wait_for_on_hook(sensor):
             start_time = None
         time.sleep(POLL_INTERVAL)
 
+def is_on_hook(sensor):
+    """
+    Returns True if proximity sensor reads "on hook" (>= threshold).
+    Pass in your sensor object.
+    """
+    return sensor.proximity >= PROXIMITY_THRESHOLD
+
