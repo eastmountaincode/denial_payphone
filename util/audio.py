@@ -1,46 +1,43 @@
 import os
 import sounddevice as sd
 import soundfile as sf
-import numpy as np 
+import numpy as np
 import time
 
-AUDIO_DEVICE_OUT = 11
-AUDIO_DEVICE_IN = 1
+AUDIO_DEVICE_OUT = 1 
+AUDIO_DEVICE_IN = 1   
 
-def play_audio_file(filename, AUDIO_DIR):
+def play_audio_file(filename, AUDIO_DIR, is_on_hook: callable, chunk_size=2048):
     """
-    Plays a .wav file using sounddevice.OutputStream. Returns the stream.
-    Orchestrator can call .close() to stop early or poll .active to know if playing.
+    Play a .wav file in small chunks, checking is_on_hook() between each.
+    Returns True if playback completed, False if interrupted (on-hook).
     """
     if not os.path.isabs(filename):
         filepath = os.path.join(AUDIO_DIR, filename)
     else:
         filepath = filename
-
     if not os.path.exists(filepath):
         raise FileNotFoundError(f"Audio file not found: {filepath}")
 
     data, samplerate = sf.read(filepath, dtype='float32')
     channels = data.shape[1] if data.ndim > 1 else 1
 
-    print(f"Playing {filepath} with samplerate {samplerate}, device {AUDIO_DEVICE_OUT}")
+    with sd.OutputStream(samplerate=samplerate, channels=channels, device=AUDIO_DEVICE_OUT) as stream:
+        start = 0
+        while start < len(data):
+            end = min(start + chunk_size, len(data))
+            stream.write(data[start:end])
+            start = end
+            if is_on_hook():
+                stream.abort()
+                return False
+    return True
 
-    stream = sd.OutputStream(samplerate=samplerate, channels=channels, device=AUDIO_DEVICE_OUT)
-    stream.start()
-    stream.write(data)
-    return stream
-
-def listen_for_amplitude(threshold=0.02, timeout=6, samplerate=44100, blocksize=1024, device=AUDIO_DEVICE_IN):
+def listen_for_amplitude(threshold=0.02, timeout=6, samplerate=44100, blocksize=1024, is_on_hook: callable):
     """
-    Listen for any sound above a threshold on the default mic.
-    Returns True if detected, False if timed out.
-
-    Usage:
-
-        if listenForAmplitude():
-            # Detected sound
-        else:
-            # Timed out, no sound detected
+    Listen for any sound above a threshold on the default mic,
+    checking is_on_hook() between blocks.
+    Returns True if detected, False if timed out, or None if interrupted.
     """
     start_time = time.time()
 
@@ -49,7 +46,7 @@ def listen_for_amplitude(threshold=0.02, timeout=6, samplerate=44100, blocksize=
         'channels': 1,
         'dtype': 'float32',
         'blocksize': blocksize,
-        'device': device
+        'device': AUDIO_DEVICE_IN
     }
 
     with sd.InputStream(**stream_args) as stream:
@@ -60,4 +57,6 @@ def listen_for_amplitude(threshold=0.02, timeout=6, samplerate=44100, blocksize=
                 return True
             if time.time() - start_time > timeout:
                 return False
+            if is_on_hook():
+                return None
 

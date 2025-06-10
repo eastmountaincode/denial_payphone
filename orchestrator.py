@@ -7,7 +7,6 @@ import sys
 import time
 import threading
 import sounddevice as sd
-import multiprocessing
 
 # In-house libraries
 
