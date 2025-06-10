@@ -84,6 +84,9 @@ def run_session(sensor, ROOT_DIR, AUDIO_DIR, vosk_model):
                 f.write(transcript.strip())
             log_event(session_id, "saved_transcript", response_path)
 
+        if not play_and_log("confession_prompt_for_kw.wav", AUDIO_DIR, sensor, session_id, "confession_prompt_for_kw"):
+            return
+
         log_event(session_id, "session_end")
     except Exception as e:
         log_event(session_id, "session_error", str(e))
