@@ -147,33 +147,33 @@ def run_session(sensor, ROOT_DIR, AUDIO_DIR, vosk_model):
                 if not play_and_log("confession_user_agreed.wav", AUDIO_DIR, sensor, session_id, "user is about to confess"):
                     return
 
-            time.sleep(0.25)
+                time.sleep(0.25)
 
-            status, audio_np = record_confession(
-                threshold=LISTEN_FOR_AMPL_THRESH,
-                on_hook_check=lambda: is_on_hook(sensor)
-            )
+                status, audio_np = record_confession(
+                    threshold=LISTEN_FOR_AMPL_THRESH,
+                    on_hook_check=lambda: is_on_hook(sensor)
+                )
 
-            if status == "on_hook":
-                log_event(session_id, "confession_aborted_on_hook")
-                return
-
-            if status == "silence":
-                silence_attempts += 1
-                log_event(session_id, "confession_no_speech_detected", f"Attempt {silence_attempts}")
-                if silence_attempts == 2:
-                    play_and_log("you_are_being_disconnected.wav", AUDIO_DIR, sensor, session_id, "confession silence disconnect")
+                if status == "on_hook":
+                    log_event(session_id, "confession_aborted_on_hook")
                     return
-                # On first silence, just loop and replay the prompt
-                continue
 
-            # status == "audio" – save it
-            confession_path = os.path.join(session["folder"], f"confession_{session_id}.wav")
-            sf.write(confession_path, audio_np, VOSK_SR)
-            log_event(session_id, "confession_audio_saved", confession_path)
+                if status == "silence":
+                    silence_attempts += 1
+                    log_event(session_id, "confession_no_speech_detected", f"Attempt {silence_attempts}")
+                    if silence_attempts == 2:
+                        play_and_log("you_are_being_disconnected.wav", AUDIO_DIR, sensor, session_id, "confession silence disconnect")
+                        return
+                    # On first silence, just loop and replay the prompt
+                    continue
 
-            # final disconnect prompt
-            play_and_log("you_are_being_disconnected.wav", AUDIO_DIR, sensor, session_id, "confession complete disconnect")
+                # status == "audio" – save it
+                confession_path = os.path.join(session["folder"], f"confession_{session_id}.wav")
+                sf.write(confession_path, audio_np, VOSK_SR)
+                log_event(session_id, "confession_audio_saved", confession_path)
+
+                # final disconnect prompt
+                play_and_log("you_are_being_disconnected.wav", AUDIO_DIR, sensor, session_id, "confession complete disconnect")
 
 
         log_event(session_id, "session_end")
