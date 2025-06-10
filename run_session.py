@@ -3,6 +3,8 @@
 from datetime import datetime
 import os
 import sys
+import queue
+from vosk import Model, KaldiRecognizer
 
 # normally we invoke run_session from Orchestrator, but in case we 
 # want to invoke run_session directly, this patch will facilitate that
@@ -16,7 +18,14 @@ from audio import play_audio_file, listen_for_amplitude
 import general_util
 from proximity import is_on_hook
 
-LISTEN_FOR_AMPL_THRESH = 0.08
+LISTEN_FOR_AMPL_THRESH = 0.10
+
+VOSK_MODEL_PATH  = "/home/denial/denial_payphone/vosk/models/vosk-model-small-en-us-0.15"
+VOSK_DEVICE      = 1          
+VOSK_SR          = 48000
+VOSK_BLOCK       = 4800
+VOSK_SILENCE_BLOCKS = 30      # 3 seconds
+
 
 def run_session(sensor, ROOT_DIR, AUDIO_DIR):
     """
@@ -34,6 +43,9 @@ def run_session(sensor, ROOT_DIR, AUDIO_DIR):
     }
     session["folder"] = general_util.create_session_folder(session_id, ROOT_DIR)
     log_event(session_id, "session_start", session["folder"])
+
+
+    model = Model(VOSK_MODEL_PATH)
     try:
         finished = play_audio_file("intro_prompt.wav", AUDIO_DIR, lambda: is_on_hook(sensor))
         if not finished:
