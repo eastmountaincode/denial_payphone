@@ -83,6 +83,7 @@ def run_session(sensor, ROOT_DIR, AUDIO_DIR, vosk_model):
             on_hook_check=lambda: is_on_hook(sensor)
         )
         log_event(session_id, "transcription_result", transcript)
+        
 
         log_event(session_id, "session_end")
     except Exception as e:
