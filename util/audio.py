@@ -4,6 +4,9 @@ import soundfile as sf
 import numpy as np 
 import time
 
+AUDIO_DEVICE_OUT = 11
+AUDIO_DEVICE_IN = 1
+
 def play_audio_file(filename, AUDIO_DIR):
     """
     Plays a .wav file using sounddevice.OutputStream. Returns the stream.
@@ -20,12 +23,14 @@ def play_audio_file(filename, AUDIO_DIR):
     data, samplerate = sf.read(filepath, dtype='float32')
     channels = data.shape[1] if data.ndim > 1 else 1
 
-    stream = sd.OutputStream(samplerate=samplerate, channels=channels)
+    print(f"Playing {filepath} with samplerate {samplerate}, device {AUDIO_DEVICE_OUT}")
+
+    stream = sd.OutputStream(samplerate=samplerate, channels=channels, device=AUDIO_DEVICE_OUT)
     stream.start()
     stream.write(data)
     return stream
 
-def listen_for_amplitude(threshold=0.02, timeout=6, samplerate=44100, blocksize=1024, device=None):
+def listen_for_amplitude(threshold=0.02, timeout=6, samplerate=44100, blocksize=1024, device=AUDIO_DEVICE_IN):
     """
     Listen for any sound above a threshold on the default mic.
     Returns True if detected, False if timed out.
