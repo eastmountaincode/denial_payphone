@@ -234,7 +234,7 @@ def run_session(sensor, ROOT_DIR, AUDIO_DIR, vosk_model):
             return
 
         # -----------------------------------------------------------------
-        # branch on affirmative / negative
+        # branch on affirmative / negative (requesting user info)
         # -----------------------------------------------------------------
         if keyword_result == "affirmative":
             if not play_and_log("info_request_affirmative_resp.wav", AUDIO_DIR, sensor,
@@ -314,11 +314,6 @@ def run_session(sensor, ROOT_DIR, AUDIO_DIR, vosk_model):
             if not play_and_log("you_are_being_disconnected.wav", AUDIO_DIR, sensor, session_id, "timeout disconnect hangup"):
                 return
             return
-
-        # final disconnect prompt
-        if not play_and_log("you_are_being_disconnected.wav", AUDIO_DIR, sensor, session_id, "cnfssion cmplete dscnnect hngp"):
-            return
-        return
 
     except Exception as e:
         log_event(session_id, "session_error", str(e))
