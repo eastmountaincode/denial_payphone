@@ -2,11 +2,11 @@
 from enum import Enum, auto
 
 class S(Enum):
-    INTRO                = auto()
-    POCKETS_Q            = auto()
-    CONFESSION_PROMPT    = auto()
-    CONFESS              = auto()
-    POST_CONF_PROMPT     = auto()
-    INFO_RECORD          = auto()
-    READY_PROMPT         = auto()
-    END                  = auto() 
+    INTRO                         = auto()
+    POCKETS_Q                     = auto()
+    CONFESSION_INQUIRY            = auto()
+    CONFESSION_RECORD             = auto()
+    POST_CONFESSION_INFO_REQUEST  = auto()
+    POST_CONFESSION_INFO_RECORD   = auto()
+    READY_TO_GO_INQUIRY           = auto()
+    END                           = auto() 
