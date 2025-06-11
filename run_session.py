@@ -271,8 +271,9 @@ def run_session(sensor, ROOT_DIR, AUDIO_DIR, vosk_model):
                 silence_countk += 1
                 log_event(session_id, "info_record_silence", f"Attempt {silence_count}")
                 if silence_count == MAX_SILENCE_COUNT:
-                    play_and_log("you_are_being_disconnected.wav", AUDIO_DIR, sensor,
-                                 session_id, "info record silence disconnect")
+                    if not play_and_log("you_are_being_disconnected.wav", AUDIO_DIR, sensor,
+                                 session_id, "info record silence disconnect"):
+                        return
                     log_event(session_id, "session_end")
                     return
                 if not play_and_log("info_request_affirmative_resp.wav", AUDIO_DIR, sensor,
@@ -285,6 +286,10 @@ def run_session(sensor, ROOT_DIR, AUDIO_DIR, vosk_model):
             sf.write(info_path, audio_np, VOSK_SR)
             log_event(session_id, "info_audio_saved", info_path)
             break  # finished recording
+
+        if not play_and_log("are_you_ready_to_go.wav", AUDIO_DIR, sensor, session_id, "are you ready to go hangup"):
+            return
+        
 
         # final disconnect prompt
         if not play_and_log("you_are_being_disconnected.wav", AUDIO_DIR, sensor, session_id, "confession complete disconnect"):
