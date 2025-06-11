@@ -256,7 +256,7 @@ def run_session(sensor, ROOT_DIR, AUDIO_DIR, vosk_model):
         while silence_count < MAX_SILENCE_COUNT:
             time.sleep(0.25)  # brief gap after affirmative prompt
 
-            status, audio_np = record_confession(
+            status, audio_np = record_user_audio_with_retry(
                 threshold=LISTEN_FOR_AMPL_THRESH,
                 on_hook_check=lambda: is_on_hook(sensor)
             )

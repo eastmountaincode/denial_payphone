@@ -142,4 +142,16 @@ def record_confession(threshold=0.07,
     audio_np = np.concatenate(frames, axis=0)
     return "audio", audio_np
 
+def record_user_audio_with_retry(max_retries=2, retry_delay=0.5, **kwargs):
+    """Thin wrapper around record_confession with a simple retry
+    when PortAudio reports device unavailable (-9985)."""
+    for attempt in range(max_retries):
+        try:
+            return record_confession(**kwargs)
+        except sd.PortAudioError as e:
+            if e.errno == -9985 and attempt + 1 < max_retries:
+                time.sleep(retry_delay)
+                continue
+            raise
+
 
