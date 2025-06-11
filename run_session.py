@@ -211,7 +211,6 @@ def run_session(sensor, ROOT_DIR, AUDIO_DIR, vosk_model):
                 if silence_count == MAX_SILENCE_COUNT:
                     play_and_log("you_are_being_disconnected.wav", AUDIO_DIR, sensor,
                          session_id, "info request silence disconnect")
-                    log_event(session_id, "session_end")
                     return
                 # first silence → replay the info-request prompt only
                 if not play_and_log("post_confession_info_request.wav", AUDIO_DIR, sensor,
@@ -232,7 +231,6 @@ def run_session(sensor, ROOT_DIR, AUDIO_DIR, vosk_model):
             log_event(session_id, "info_request_max_attempts_reached")
             play_and_log("you_are_being_disconnected.wav", AUDIO_DIR, sensor,
                  session_id, "info request max attempts")
-            log_event(session_id, "session_end")
             return
 
         # -----------------------------------------------------------------
@@ -268,13 +266,12 @@ def run_session(sensor, ROOT_DIR, AUDIO_DIR, vosk_model):
                 return
 
             if status == "silence":
-                silence_countk += 1
+                silence_count += 1
                 log_event(session_id, "info_record_silence", f"Attempt {silence_count}")
                 if silence_count == MAX_SILENCE_COUNT:
                     if not play_and_log("you_are_being_disconnected.wav", AUDIO_DIR, sensor,
                                  session_id, "info record silence disconnect"):
                         return
-                    log_event(session_id, "session_end")
                     return
                 if not play_and_log("info_request_affirmative_resp.wav", AUDIO_DIR, sensor,
                                     session_id, "info prompt repeat"):
@@ -289,16 +286,14 @@ def run_session(sensor, ROOT_DIR, AUDIO_DIR, vosk_model):
 
         if not play_and_log("are_you_ready_to_go.wav", AUDIO_DIR, sensor, session_id, "are you ready to go hangup"):
             return
-        
 
         # final disconnect prompt
         if not play_and_log("you_are_being_disconnected.wav", AUDIO_DIR, sensor, session_id, "confession complete disconnect"):
             return
         return
 
-
-        log_event(session_id, "session_end")
     except Exception as e:
         log_event(session_id, "session_error", str(e))
         print(f"Session {session_id} error: {e}")
-
+    finally:
+        log_event(session_id, "session_end")
