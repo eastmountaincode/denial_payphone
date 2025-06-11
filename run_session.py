@@ -16,7 +16,7 @@ if UTIL_DIR not in sys.path:
     sys.path.insert(0, UTIL_DIR)
 
 from log import log_event
-from audio import play_audio_file, listen_for_amplitude, record_confession
+from audio import play_audio_file, listen_for_amplitude, record_confession, record_user_audio_with_retry
 from general_util import create_session_folder, play_and_log, generate_unique_session_id 
 from proximity import is_on_hook
 from vosk_transcribe import vosk_transcribe
@@ -51,137 +51,137 @@ def run_session(sensor, ROOT_DIR, AUDIO_DIR, vosk_model):
     log_event(session_id, "session_start", session["folder"])
 
     try:
-#        if not play_and_log("intro_prompt.wav", AUDIO_DIR, sensor, session_id, "intro prompt hangup"):
-#            return
-#
-#        heard = listen_for_amplitude(threshold=LISTEN_FOR_AMPL_THRESH, timeout=6, is_on_hook=lambda: is_on_hook(sensor))
-#        if heard is None:
-#            log_event(session_id, "session_interrupted_by_on_hook", "User hung up during listen_for_amplitude.")
-#            print("Session interrupted (on-hook during listen).")
-#            return
-#
-#        if heard:
-#            log_event(session_id, "amplitude_detected_after_intro")
-#            if not play_and_log("post_intro_user_did_speak.wav", AUDIO_DIR, sensor, session_id, "intro response hangup"):
-#                return
-#        else:
-#            log_event(session_id, "no_amplitude_detected_after_intro")
-#            if not play_and_log("post_intro_user_did_not_speak.wav", AUDIO_DIR, sensor, session_id, "intro n-spk rspnse hangup"):
-#                return
-#
-#        if not play_and_log("pockets_prompt.wav", AUDIO_DIR, sensor, session_id, "pockets prompt"):
-#            return
-#
-#        log_event(session_id, "starting_transcription_1")
-#        transcript = vosk_transcribe(vosk_model, on_hook_check=lambda: is_on_hook(sensor))
-#        log_event(session_id, "transcription_result", transcript)
-#
-#        if not transcript.strip():
-#            log_event(session_id, "pockets_no_speech_detected")
-#            if not play_and_log("pockets_user_did_not_respond.wav", AUDIO_DIR, sensor, session_id, "pockets no-response message"):
-#                return
-#        else:
-#            log_event(session_id, "pockets_user_responded", transcript)
-#            if not play_and_log("pockets_user_responded.wav", AUDIO_DIR, sensor, session_id, "pockets response message"):
-#                return
-#            response_path = os.path.join(session["folder"], "pockets_transcript.txt")
-#            with open(response_path, "w") as f:
-#                f.write(transcript.strip())
-#            log_event(session_id, "saved_transcript", response_path)
-# 
-#         
-#         if not play_and_log("confession_prompt_for_kw.wav", AUDIO_DIR, sensor, session_id, "confession_prompt_for_kw"):
-#             return
-# 
-#         kw_attempts = 0
-#         silence_count = 0
-#         while kw_attempts < MAX_KEYWORD_ATTEMPTS:
-#             kw_attempts += 1
-#             keyword_result = wait_for_keyword_response(sensor, on_hook_check=lambda: is_on_hook(sensor))
-#             if keyword_result == "on_hook":
-#                 log_event(session_id, "session_interrupted_by_on_hook", "User hung up during keyword detection.") 
-#                 return
-#             if keyword_result in ("affirmative", "negative"): 
-#                 log_event(session_id, "keyword_result", keyword_result)
-#                 break
-#             if keyword_result == "silence":
-#                 silence_count += 1
-#                 log_event(session_id, "keyword_silence_detected", f"Kw Attmpt {kw_attempts}, silence count: {silence_count}")
-#                 if silence_count == MAX_SILENCE_COUNT:
-#                     log_event(session_id, "keyword_silence_detected", f"Kw Attmpt {kw_attempts}, silence count: {silence_count}")
-#                     if not play_and_log("you_are_being_disconnected.wav", AUDIO_DIR, sensor, session_id, "silence disconnect"): 
-#                         return
-#                     return
-#                 if not play_and_log("confession_kw_misunderstood.wav", AUDIO_DIR, sensor, session_id, "silence occurence"):
-#                     return
-#                 continue
-#             log_event(session_id, "keyword_not_understood", f"Attempt {kw_attempts}")
-#             if kw_attempts == MAX_KEYWORD_ATTEMPTS: 
-#                 break
-#             if not play_and_log("confession_kw_misunderstood.wav", AUDIO_DIR, sensor, session_id, "keyword not understood"): 
-#                 return
-# 
-#         # Max keyword attempts reached...
-#         if kw_attempts == MAX_KEYWORD_ATTEMPTS:
-#             log_event(session_id, "keyword_max_attempts_reached")
-#             if not play_and_log("you_are_being_disconnected.wav", AUDIO_DIR, sensor, session_id, "keyword max attempts"):
-#                 return
-#             return
-#         
-#         # -----------------------------------------------------------------
-#         # NEGATIVE → DISCONNECT
-#         # -----------------------------------------------------------------
-#         if keyword_result == "negative":
-#             if not play_and_log("confession_user_denied.wav", AUDIO_DIR, sensor, session_id, "user denied to confess hangup"):
-#                 return
-#             if not play_and_log("you_are_being_disconnected.wav", AUDIO_DIR, sensor, session_id, "dscnnctd cnfssion dnial hangup"):
-#                 return
-#             return
-# 
-#         # -----------------------------------------------------------------
-#         # AFFIRMATIVE → RECORD CONFESSION
-#         # -----------------------------------------------------------------
-#         keyword_result = "affirmative"
-#         if keyword_result != "affirmative":
-#             print("Something is wrong")
-# 
-#         silence_attempts = 0
-#         while silence_attempts < 2:
-#             if not play_and_log("confession_user_agreed.wav", AUDIO_DIR, sensor, session_id, "user is about to confess hang-up"):
-#                 return
-# 
-#             time.sleep(0.25)
-#                 
-#             log_event(session_id, "recording_confession...")
-#             status, audio_np = record_confession(
-#                 threshold=LISTEN_FOR_AMPL_THRESH,
-#                 on_hook_check=lambda: is_on_hook(sensor)
-#             )
-# 
-#             if status == "on_hook":
-#                 log_event(session_id, "confession_aborted_on_hook")
-#                 return
-# 
-#             if status == "silence":
-#                 silence_attempts += 1
-#                 log_event(session_id, "confession_no_speech_detected", f"Attempt {silence_attempts}")
-#                 if silence_attempts == 2:
-#                     if not play_and_log("you_are_being_disconnected.wav", AUDIO_DIR, sensor, session_id, "cnfssion slnce dscnnet"):
-#                         return
-#                     return
-#                 # On first silence, just loop and replay the prompt
-#                 continue
-# 
-#             # status == "audio" – save it
-#             confession_path = os.path.join(session["folder"], f"confession_{session_id}.wav")
-#             sf.write(confession_path, audio_np, VOSK_SR)
-#             log_event(session_id, "confession_audio_saved", confession_path)
-#             break
-# 
-#         if not play_and_log("post_confession_message.wav", AUDIO_DIR, sensor, session_id, "post confession msg disconnect"):
-#             return
-#         if not play_and_log("post_confession_info_request.wav", AUDIO_DIR, sensor, session_id, "post cnfssn info req dscnnct"):
-#             return
+        if not play_and_log("intro_prompt.wav", AUDIO_DIR, sensor, session_id, "intro prompt hangup"):
+            return
+
+        heard = listen_for_amplitude(threshold=LISTEN_FOR_AMPL_THRESH, timeout=6, is_on_hook=lambda: is_on_hook(sensor))
+        if heard is None:
+            log_event(session_id, "session_interrupted_by_on_hook", "User hung up during listen_for_amplitude.")
+            print("Session interrupted (on-hook during listen).")
+            return
+
+        if heard:
+            log_event(session_id, "amplitude_detected_after_intro")
+            if not play_and_log("post_intro_user_did_speak.wav", AUDIO_DIR, sensor, session_id, "intro response hangup"):
+                return
+        else:
+            log_event(session_id, "no_amplitude_detected_after_intro")
+            if not play_and_log("post_intro_user_did_not_speak.wav", AUDIO_DIR, sensor, session_id, "intro n-spk rspnse hangup"):
+                return
+
+        if not play_and_log("pockets_prompt.wav", AUDIO_DIR, sensor, session_id, "pockets prompt"):
+            return
+
+        log_event(session_id, "starting_transcription_1")
+        transcript = vosk_transcribe(vosk_model, on_hook_check=lambda: is_on_hook(sensor))
+        log_event(session_id, "transcription_result", transcript)
+
+        if not transcript.strip():
+            log_event(session_id, "pockets_no_speech_detected")
+            if not play_and_log("pockets_user_did_not_respond.wav", AUDIO_DIR, sensor, session_id, "pockets no-response message"):
+                return
+        else:
+            log_event(session_id, "pockets_user_responded", transcript)
+            if not play_and_log("pockets_user_responded.wav", AUDIO_DIR, sensor, session_id, "pockets response message"):
+                return
+            response_path = os.path.join(session["folder"], "pockets_transcript.txt")
+            with open(response_path, "w") as f:
+                f.write(transcript.strip())
+            log_event(session_id, "saved_transcript", response_path)
+
+        
+        if not play_and_log("confession_prompt_for_kw.wav", AUDIO_DIR, sensor, session_id, "confession_prompt_for_kw"):
+             return
+
+        kw_attempts = 0
+        silence_count = 0
+        while kw_attempts < MAX_KEYWORD_ATTEMPTS:
+            kw_attempts += 1
+            keyword_result = wait_for_keyword_response(sensor, on_hook_check=lambda: is_on_hook(sensor))
+            if keyword_result == "on_hook":
+                log_event(session_id, "session_interrupted_by_on_hook", "User hung up during keyword detection.") 
+                return
+            if keyword_result in ("affirmative", "negative"): 
+                og_event(session_id, "keyword_result", keyword_result)
+                break
+            if keyword_result == "silence":
+                silence_count += 1
+                log_event(session_id, "keyword_silence_detected", f"Kw Attmpt {kw_attempts}, silence count: {silence_count}")
+                if silence_count == MAX_SILENCE_COUNT:
+                    log_event(session_id, "keyword_silence_detected", f"Kw Attmpt {kw_attempts}, silence count: {silence_count}")
+                    if not play_and_log("you_are_being_disconnected.wav", AUDIO_DIR, sensor, session_id, "silence disconnect"): 
+                        return
+                    return
+                if not play_and_log("confession_kw_misunderstood.wav", AUDIO_DIR, sensor, session_id, "silence occurence"):
+                    return
+                continue
+            log_event(session_id, "keyword_not_understood", f"Attempt {kw_attempts}")
+            if kw_attempts == MAX_KEYWORD_ATTEMPTS: 
+                break
+            if not play_and_log("confession_kw_misunderstood.wav", AUDIO_DIR, sensor, session_id, "keyword not understood"): 
+                return
+
+        # Max keyword attempts reached...
+        if kw_attempts == MAX_KEYWORD_ATTEMPTS:
+            log_event(session_id, "keyword_max_attempts_reached")
+            if not play_and_log("you_are_being_disconnected.wav", AUDIO_DIR, sensor, session_id, "keyword max attempts"):
+                return
+            return
+        
+        # -----------------------------------------------------------------
+        # NEGATIVE → DISCONNECT
+        # -----------------------------------------------------------------
+        if keyword_result == "negative":
+            if not play_and_log("confession_user_denied.wav", AUDIO_DIR, sensor, session_id, "user denied to confess hangup"):
+                return
+            if not play_and_log("you_are_being_disconnected.wav", AUDIO_DIR, sensor, session_id, "dscnnctd cnfssion dnial hangup"):
+                return
+            return
+
+        # -----------------------------------------------------------------
+        # AFFIRMATIVE → RECORD CONFESSION
+        # -----------------------------------------------------------------
+        keyword_result = "affirmative"
+        if keyword_result != "affirmative":
+            print("Something is wrong")
+
+        silence_attempts = 0
+        while silence_attempts < 2:
+            if not play_and_log("confession_user_agreed.wav", AUDIO_DIR, sensor, session_id, "user is about to confess hang-up"):
+                return
+
+            time.sleep(0.25)
+                
+            log_event(session_id, "recording_confession...")
+            status, audio_np = record_confession(
+                threshold=LISTEN_FOR_AMPL_THRESH,
+                on_hook_check=lambda: is_on_hook(sensor)
+            )
+
+            if status == "on_hook":
+                log_event(session_id, "confession_aborted_on_hook")
+                return
+
+            if status == "silence":
+                silence_attempts += 1
+                log_event(session_id, "confession_no_speech_detected", f"Attempt {silence_attempts}")
+                if silence_attempts == 2:
+                    if not play_and_log("you_are_being_disconnected.wav", AUDIO_DIR, sensor, session_id, "cnfssion slnce dscnnet"):
+                        return
+                    return
+                # On first silence, just loop and replay the prompt
+                continue
+
+            # status == "audio" – save it
+            confession_path = os.path.join(session["folder"], f"confession_{session_id}.wav")
+            sf.write(confession_path, audio_np, VOSK_SR)
+            log_event(session_id, "confession_audio_saved", confession_path)
+            break
+
+        if not play_and_log("post_confession_message.wav", AUDIO_DIR, sensor, session_id, "post confession msg disconnect"):
+            return
+        if not play_and_log("post_confession_info_request.wav", AUDIO_DIR, sensor, session_id, "post cnfssn info req dscnnct"):
+            return
 
         # -----------------------------------------------------------------
         # YES / NO keyword loop for post-confession user info
@@ -193,11 +193,11 @@ def run_session(sensor, ROOT_DIR, AUDIO_DIR, vosk_model):
         while kw_attempts < MAX_KEYWORD_ATTEMPTS:
             kw_attempts += 1
             keyword_result = wait_for_keyword_response(sensor,
-                                               on_hook_check=lambda: is_on_hook(sensor))
+                                              on_hook_check=lambda: is_on_hook(sensor))
 
             if keyword_result == "on_hook":
                 log_event(session_id, "session_interrupted_by_on_hook",
-                  "User hung up during info-request keyword detection")
+                   "User hung up during info-request keyword detection")
                 return
 
             if keyword_result in ("affirmative", "negative"):

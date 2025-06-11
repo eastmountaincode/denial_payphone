@@ -149,7 +149,7 @@ def record_user_audio_with_retry(max_retries=2, retry_delay=0.5, **kwargs):
         try:
             return record_confession(**kwargs)
         except sd.PortAudioError as e:
-            if e.errno == -9985 and attempt + 1 < max_retries:
+            if e.args and e.args[0] == -9985 and attempt + 1 < max_retries:
                 time.sleep(retry_delay)
                 continue
             raise
