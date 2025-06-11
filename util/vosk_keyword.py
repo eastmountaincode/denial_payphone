@@ -38,7 +38,7 @@ def wait_for_keyword_response(sensor, vosk_model, on_hook_check=None) -> str:
     Listen until we hear an affirmative/negative keyword or timeout.
     Returns: "affirmative", "negative", "not_understood", "silence", "on_hook"
     """
-    rec        = KaldiRecognizer(vosk_model, VOSK_SR, KEYWORD_GRAMMAR)
+    rec        = KaldiRecognizer(vosk_model, VOSK_SR)
     audio_q    = queue.Queue()
     start_time = time.monotonic()
 
