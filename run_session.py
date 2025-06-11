@@ -287,8 +287,36 @@ def run_session(sensor, ROOT_DIR, AUDIO_DIR, vosk_model):
         if not play_and_log("are_you_ready_to_go.wav", AUDIO_DIR, sensor, session_id, "are you ready to go hangup"):
             return
 
+        # Listen for yes/no/timeout after the prompt
+        ready_keyword_result = wait_for_keyword_response(
+            sensor,
+            on_hook_check=lambda: is_on_hook(sensor)
+        )
+
+        if ready_keyword_result == "on_hook":
+            return
+
+        elif ready_keyword_result == "affirmative":
+            if not play_and_log("user_agreed_to_go.wav", AUDIO_DIR, sensor, session_id, "user agreed to go hangup"):
+                return
+            if not play_and_log("you_are_being_disconnected.wav", AUDIO_DIR, sensor, session_id, "final disconnect hangup"):
+                return
+            return
+
+        elif ready_keyword_result == "negative":
+            if not play_and_log("user_declined_to_go.wav", AUDIO_DIR, sensor, session_id, "user declined to go hangup"):
+                return
+            if not play_and_log("you_are_being_disconnected.wav", AUDIO_DIR, sensor, session_id, "final disconnect hangup"):
+                return
+            return
+
+        else:  # includes "silence" or any unexpected value
+            if not play_and_log("you_are_being_disconnected.wav", AUDIO_DIR, sensor, session_id, "timeout disconnect hangup"):
+                return
+            return
+
         # final disconnect prompt
-        if not play_and_log("you_are_being_disconnected.wav", AUDIO_DIR, sensor, session_id, "confession complete disconnect"):
+        if not play_and_log("you_are_being_disconnected.wav", AUDIO_DIR, sensor, session_id, "cnfssion cmplete dscnnect hngp"):
             return
         return
 
