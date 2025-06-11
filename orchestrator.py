@@ -16,7 +16,7 @@ from proximity import (
     wait_for_off_hook,
     wait_for_on_hook,
 )
-from run_session import run_session
+from session_fsm import run_session
 from audio import play_audio_file
 
 ROOT_DIR = "/home/denial/denial_payphone/payphone"
