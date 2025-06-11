@@ -239,11 +239,17 @@ def run_session(sensor, ROOT_DIR, AUDIO_DIR, vosk_model):
         # branch on affirmative / negative
         # -----------------------------------------------------------------
         if keyword_result == "affirmative":
-            play_and_log("info_request_affirmative_resp.wav", AUDIO_DIR, sensor,
-                 session_id, "info request affirmative response")
+            if not play_and_log("info_request_affirmative_resp.wav", AUDIO_DIR, sensor,
+                 session_id, "info request affirmative response"):
+                return
         elif keyword_result == "negative":
-            play_and_log("info_request_negative_resp.wav", AUDIO_DIR, sensor,
-                 session_id, "info request negative response")
+            if not play_and_log("info_request_negative_resp.wav", AUDIO_DIR, sensor,
+                 session_id, "info request negative response hangup"):
+                return
+            if not play_and_log("you_are_being_disconnected.wav", AUDIO_DIR, sensor,
+                 session_id, "you are being disconnected info req hangup"):
+                return
+            return
 
         # final disconnect prompt
         if not play_and_log("you_are_being_disconnected.wav", AUDIO_DIR, sensor, session_id, "confession complete disconnect"):
