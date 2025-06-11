@@ -22,7 +22,7 @@ from proximity import is_on_hook
 from vosk_transcribe import vosk_transcribe
 from vosk_keyword import wait_for_keyword_response
 
-LISTEN_FOR_AMPL_THRESH = 0.03
+LISTEN_FOR_AMPL_THRESH = 0.05
 
 VOSK_MODEL_PATH  = "/home/denial/denial_payphone/vosk/models/vosk-model-small-en-us-0.15"
 VOSK_DEVICE      = 1          
@@ -41,8 +41,8 @@ def run_session(sensor, ROOT_DIR, AUDIO_DIR, vosk_model):
     - AUDIO_DIR: absolute path to prompt .wav files
     """
 
-    #self.session_id = generate_unique_session_id(ROOT_DIR)
-    session_id = "session1234" 
+    session_id = generate_unique_session_id(ROOT_DIR)
+    #session_id = "session1234" 
     session = {
         "session_id": session_id,
         "start_time": datetime.now().isoformat()
@@ -160,7 +160,7 @@ def run_session(sensor, ROOT_DIR, AUDIO_DIR, vosk_model):
 
             log_event(session_id, "recording_confession...")
             status, audio_np = record_confession(
-                threshold=LISTEN_FOR_AMPL_THRESH,
+                threshold=0.05,
                 on_hook_check=lambda: is_on_hook(sensor)
             )
 
