@@ -251,6 +251,41 @@ def run_session(sensor, ROOT_DIR, AUDIO_DIR, vosk_model):
                 return
             return
 
+        # -----------------------------------------------------------------
+        # (only reached if affirmative) – record user info
+        # -----------------------------------------------------------------
+        silence_count = 0
+        while silence_count < MAX_SILENCE_COUNT:
+            time.sleep(0.25)  # brief gap after affirmative prompt
+
+            status, audio_np = record_confession(
+                threshold=LISTEN_FOR_AMPL_THRESH,
+                on_hook_check=lambda: is_on_hook(sensor)
+            )
+
+            if status == "on_hook":
+                log_event(session_id, "info_record_aborted_on_hook")
+                return
+
+            if status == "silence":
+                silence_attempts += 1
+                log_event(session_id, "info_record_silence", f"Attempt {silence_count}")
+                if silence_count == MAX_SILENCE_COUNT:
+                    play_and_log("you_are_being_disconnected.wav", AUDIO_DIR, sensor,
+                                 session_id, "info record silence disconnect")
+                    log_event(session_id, "session_end")
+                    return
+                if not play_and_log("info_request_affirmative_resp.wav", AUDIO_DIR, sensor,
+                                    session_id, "info prompt repeat"):
+                    return
+                continue  # retry
+
+            # status == "audio": save it
+            info_path = os.path.join(session["folder"], f"info_{session_id}.wav")
+            sf.write(info_path, audio_np, VOSK_SR)
+            log_event(session_id, "info_audio_saved", info_path)
+            break  # finished recording
+
         # final disconnect prompt
         if not play_and_log("you_are_being_disconnected.wav", AUDIO_DIR, sensor, session_id, "confession complete disconnect"):
             return
