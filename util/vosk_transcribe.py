@@ -11,6 +11,7 @@ VOSK_DEVICE         = 1
 VOSK_SR             = 48000
 VOSK_BLOCKSIZE      = 4800
 MAX_SILENCE_BLOCKS = 30      # 3 seconds
+ENERGY_THRESHOLD   = 400
 
 
 def vosk_transcribe(vosk_model, max_initial_silence=6, on_hook_check=None):
@@ -25,7 +26,7 @@ def vosk_transcribe(vosk_model, max_initial_silence=6, on_hook_check=None):
     result_text = ""
     start_time = time.time()
 
-    def is_silence(data, threshold=500):
+    def is_silence(data, threshold=ENERGY_THRESHOLD):
         audio = np.frombuffer(data, dtype=np.int16)
         return np.abs(audio).mean() < threshold
 

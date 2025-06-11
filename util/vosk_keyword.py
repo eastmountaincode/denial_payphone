@@ -14,7 +14,7 @@ VOSK_DEVICE          = 1           # audio-input device index
 VOSK_SR              = 48000       # sample rate (Hz)
 VOSK_BLOCKSIZE       = 4800        # block size (samples)
 SILENCE_TIMEOUT_SEC  = 8           # silence before giving up (sec)
-ENERGY_THRESHOLD     = 500         # for is_silence() helper, if needed
+ENERGY_THRESHOLD     = 400         # for is_silence() helper, if needed
 
 # ----------------------------------------------------------------------
 # Keyword grammar
