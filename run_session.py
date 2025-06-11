@@ -268,7 +268,7 @@ def run_session(sensor, ROOT_DIR, AUDIO_DIR, vosk_model):
                 return
 
             if status == "silence":
-                silence_attempts += 1
+                silence_countk += 1
                 log_event(session_id, "info_record_silence", f"Attempt {silence_count}")
                 if silence_count == MAX_SILENCE_COUNT:
                     play_and_log("you_are_being_disconnected.wav", AUDIO_DIR, sensor,
