@@ -16,13 +16,13 @@ if UTIL_DIR not in sys.path:
     sys.path.insert(0, UTIL_DIR)
 
 from log import log_event
-from audio import play_audio_file, listen_for_amplitude, record_confession, record_user_audio_with_retry
+from audio import play_audio_file, listen_for_amplitude, record_confession
 from general_util import create_session_folder, play_and_log, generate_unique_session_id 
 from proximity import is_on_hook
 from vosk_transcribe import vosk_transcribe
-from pv_keyword import wait_for_keyword_response
+from vosk_keyword import wait_for_keyword_response
 
-LISTEN_FOR_AMPL_THRESH = 0.04
+LISTEN_FOR_AMPL_THRESH = 0.03
 
 VOSK_MODEL_PATH  = "/home/denial/denial_payphone/vosk/models/vosk-model-small-en-us-0.15"
 VOSK_DEVICE      = 1          
@@ -54,6 +54,9 @@ def run_session(sensor, ROOT_DIR, AUDIO_DIR, vosk_model):
         if not play_and_log("intro_prompt.wav", AUDIO_DIR, sensor, session_id, "intro prompt hangup"):
             return
 
+        # -----------------------------------------------------------------
+        # Listen for user to say something
+        # -----------------------------------------------------------------
         heard = listen_for_amplitude(threshold=LISTEN_FOR_AMPL_THRESH, timeout=6, is_on_hook=lambda: is_on_hook(sensor))
         if heard is None:
             log_event(session_id, "session_interrupted_by_on_hook", "User hung up during listen_for_amplitude.")
@@ -69,6 +72,9 @@ def run_session(sensor, ROOT_DIR, AUDIO_DIR, vosk_model):
             if not play_and_log("post_intro_user_did_not_speak.wav", AUDIO_DIR, sensor, session_id, "intro n-spk rspnse hangup"):
                 return
 
+        # -----------------------------------------------------------------
+        # Ask the user what's in their pockets
+        # -----------------------------------------------------------------
         if not play_and_log("pockets_prompt.wav", AUDIO_DIR, sensor, session_id, "pockets prompt"):
             return
 
@@ -89,7 +95,9 @@ def run_session(sensor, ROOT_DIR, AUDIO_DIR, vosk_model):
                 f.write(transcript.strip())
             log_event(session_id, "saved_transcript", response_path)
 
-        
+        # -----------------------------------------------------------------
+        # Ask the user if they're willing to confess
+        # -----------------------------------------------------------------  
         if not play_and_log("confession_prompt_for_kw.wav", AUDIO_DIR, sensor, session_id, "confession_prompt_for_kw"):
              return
 
@@ -97,12 +105,12 @@ def run_session(sensor, ROOT_DIR, AUDIO_DIR, vosk_model):
         silence_count = 0
         while kw_attempts < MAX_KEYWORD_ATTEMPTS:
             kw_attempts += 1
-            keyword_result = wait_for_keyword_response(sensor, on_hook_check=lambda: is_on_hook(sensor))
+            keyword_result = wait_for_keyword_response(sensor, vosk_model, on_hook_check=lambda: is_on_hook(sensor))
             if keyword_result == "on_hook":
                 log_event(session_id, "session_interrupted_by_on_hook", "User hung up during keyword detection.") 
                 return
             if keyword_result in ("affirmative", "negative"): 
-                og_event(session_id, "keyword_result", keyword_result)
+                log_event(session_id, "keyword_result", keyword_result)
                 break
             if keyword_result == "silence":
                 silence_count += 1
@@ -150,8 +158,6 @@ def run_session(sensor, ROOT_DIR, AUDIO_DIR, vosk_model):
             if not play_and_log("confession_user_agreed.wav", AUDIO_DIR, sensor, session_id, "user is about to confess hang-up"):
                 return
 
-            time.sleep(0.25)
-                
             log_event(session_id, "recording_confession...")
             status, audio_np = record_confession(
                 threshold=LISTEN_FOR_AMPL_THRESH,
@@ -181,7 +187,7 @@ def run_session(sensor, ROOT_DIR, AUDIO_DIR, vosk_model):
         if not play_and_log("post_confession_message.wav", AUDIO_DIR, sensor, session_id, "post confession msg disconnect"):
             return
         if not play_and_log("post_confession_info_request.wav", AUDIO_DIR, sensor, session_id, "post cnfssn info req dscnnct"):
-            return
+           return
 
         # -----------------------------------------------------------------
         # YES / NO keyword loop for post-confession user info
@@ -192,7 +198,7 @@ def run_session(sensor, ROOT_DIR, AUDIO_DIR, vosk_model):
 
         while kw_attempts < MAX_KEYWORD_ATTEMPTS:
             kw_attempts += 1
-            keyword_result = wait_for_keyword_response(sensor,
+            keyword_result = wait_for_keyword_response(sensor, vosk_model,
                                               on_hook_check=lambda: is_on_hook(sensor))
 
             if keyword_result == "on_hook":
@@ -254,9 +260,8 @@ def run_session(sensor, ROOT_DIR, AUDIO_DIR, vosk_model):
         # -----------------------------------------------------------------
         silence_count = 0
         while silence_count < MAX_SILENCE_COUNT:
-            time.sleep(0.25)  # brief gap after affirmative prompt
 
-            status, audio_np = record_user_audio_with_retry(
+            status, audio_np = record_confession(
                 threshold=LISTEN_FOR_AMPL_THRESH,
                 on_hook_check=lambda: is_on_hook(sensor)
             )
@@ -284,12 +289,16 @@ def run_session(sensor, ROOT_DIR, AUDIO_DIR, vosk_model):
             log_event(session_id, "info_audio_saved", info_path)
             break  # finished recording
 
+        # -----------------------------------------------------------------
+        # Ask the user if they're ready to go
+        # -----------------------------------------------------------------
         if not play_and_log("are_you_ready_to_go.wav", AUDIO_DIR, sensor, session_id, "are you ready to go hangup"):
             return
 
         # Listen for yes/no/timeout after the prompt
         ready_keyword_result = wait_for_keyword_response(
             sensor,
+            vosk_model,
             on_hook_check=lambda: is_on_hook(sensor)
         )
 
