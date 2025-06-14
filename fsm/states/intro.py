@@ -28,6 +28,10 @@ def handle_intro(engine):
     Raises:
         SessionAbort: If user hangs up or audio playback fails
     """
+    # You are being connected message
+    if not play_and_log("you_are_being_connected.wav", str(engine.audio_dir), engine.sensor, engine.session_id, "being connected message"):
+        raise engine.SessionAbort
+
     # Play intro prompt
     if not play_and_log("intro_prompt.wav", str(engine.audio_dir), engine.sensor, engine.session_id, "intro prompt hangup"):
         raise engine.SessionAbort
