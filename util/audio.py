@@ -8,7 +8,6 @@ AUDIO_DEVICE_OUT = 1
 AUDIO_DEVICE_IN = 1   
 SAMPLE_RATE = 48000
 
-
 def play_audio_file(filename, AUDIO_DIR, is_on_hook: callable = None, chunk_size=2048):
     """
     Play a .wav file in small chunks, checking is_on_hook() between each.

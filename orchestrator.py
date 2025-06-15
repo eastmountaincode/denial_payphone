@@ -16,11 +16,11 @@ from proximity import (
     wait_for_off_hook,
     wait_for_on_hook,
 )
-from run_session import run_session
+from session_fsm import run_session
 from audio import play_audio_file
 
 ROOT_DIR = "/home/denial/denial_payphone/payphone"
-AUDIO_DIR = "/home/denial/denial_payphone/payphone/audio_files/dev_sil_trimmed"
+AUDIO_DIR = "/home/denial/denial_payphone/payphone/audio_files/prod_2025_06_13"
 
 VOSK_MODEL_PATH  = "/home/denial/denial_payphone/vosk/models/vosk-model-small-en-us-0.15"
 
