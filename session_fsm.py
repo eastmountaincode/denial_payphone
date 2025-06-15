@@ -32,7 +32,8 @@ class SessionEngine:
         self.SessionAbort = SessionAbort
 
         # Generate session ID and create folder - direct attributes instead of SessionCtx
-        self.session_id = generate_unique_session_id(str(root))
+        #self.session_id = generate_unique_session_id(str(root))
+        self.session_id = "session1234"
         self.session_folder = Path(create_session_folder(self.session_id, str(root)))
 
         # Load state handlers dynamically from fsm/states/ directory
@@ -46,7 +47,7 @@ class SessionEngine:
         log_event(self.session_id, "session_start", str(self.session_folder))
         
         # Set the initial state to INTRO
-        state = S.INTRO
+        state = S.CONFESSION_RECORD_AND_TRANSCRIBE
 
         # Each iteration executes the handler for the current state,
         # which may block (e.g., waiting for user input), and then returns the next state.

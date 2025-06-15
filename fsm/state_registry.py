@@ -25,6 +25,7 @@ def load_state_handlers():
         "pockets": S.POCKETS_Q,
         "confession_inquiry": S.CONFESSION_INQUIRY,
         "confession_record": S.CONFESSION_RECORD,
+        "confession_record_and_transcribe": S.CONFESSION_RECORD_AND_TRANSCRIBE,
         "post_confession_info_request": S.POST_CONFESSION_INFO_REQUEST,
         "post_confession_info_record": S.POST_CONFESSION_INFO_RECORD,
         "ready_to_go_inquiry": S.READY_TO_GO_INQUIRY,

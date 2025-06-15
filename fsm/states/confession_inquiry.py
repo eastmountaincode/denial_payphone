@@ -91,10 +91,10 @@ def handle_confession_inquiry(engine):
         print("FSM: User denied confession - ending session")
         return S.END
     
-    # keyword_result == "affirmative" - proceed to recording
+    # keyword_result == "affirmative" - proceed to recording and transcription
     if keyword_result == "affirmative":
-        print("FSM: User agreed to confess - moving to confession recording")
-        return S.CONFESSION_RECORD
+        print("FSM: User agreed to confess - moving to confession recording and transcription")
+        return S.CONFESSION_RECORD_AND_TRANSCRIBE
     
     # Should not reach here, but safety fallback
     print("FSM: Unexpected keyword result - ending session")
