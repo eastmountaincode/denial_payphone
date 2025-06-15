@@ -94,57 +94,6 @@ def resample_audio(data, orig_sr, target_sr):
         ]).T
     return resampled.astype('float32'), target_sr
 
-def record_confession(threshold=0.03,
-                      max_initial_silence=10.0,
-                      trailing_silence=3.0,
-                      sr=48000,
-                      device_index=1,
-                      on_hook_check=None):
-    """
-    Record until user finishes speaking or stays silent too long.
-    Returns tuple (status, audio_np_array)
-        status:
-            "audio"     – user spoke, audio returned
-            "silence"   – 10 s of total silence, no audio
-            "on_hook"   – handset replaced during record
-    """
-    block_dur   = 0.1                           # 100 ms blocks
-    block_size  = int(sr * block_dur)
-    max_init_blocks   = int(max_initial_silence / block_dur)
-    trailing_blocks   = int(trailing_silence   / block_dur)
-
-    started, trailing_cnt, frames = False, 0, []
-
-    with sd.InputStream(channels=1,
-                        samplerate=sr,
-                        blocksize=block_size,
-                        device=device_index,
-                        dtype='float32') as stream:
-        while True:
-            if on_hook_check and on_hook_check():
-                return "on_hook", None
-
-            data, _ = stream.read(block_size)
-            rms = np.sqrt(np.mean(data ** 2))
-
-            if not started:
-                if rms >= threshold:
-                    started = True
-                    frames.append(data.copy())
-                else:
-                    max_init_blocks -= 1
-                    if max_init_blocks <= 0:
-                        return "silence", None
-            else:
-                frames.append(data.copy())
-                trailing_cnt = trailing_cnt + 1 if rms < threshold else 0
-                if trailing_cnt >= trailing_blocks:
-                    break
-
-    audio_np = np.concatenate(frames, axis=0)
-    return "audio", audio_np
-
-
 def record_and_transcribe(vosk_model,
                          threshold=0.03,
                          max_initial_silence=10.0,
