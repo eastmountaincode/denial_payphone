@@ -148,7 +148,7 @@ def record_confession(threshold=0.03,
 def record_and_transcribe(vosk_model,
                          threshold=0.03,
                          max_initial_silence=10.0,
-                         trailing_silence=3.0,
+                         trailing_silence=4.0,
                          sr=48000,
                          device_index=1,
                          on_hook_check=None):
