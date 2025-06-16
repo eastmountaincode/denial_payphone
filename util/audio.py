@@ -4,6 +4,8 @@ import soundfile as sf
 import numpy as np
 import time
 import json
+import threading
+import queue
 from vosk import KaldiRecognizer
 
 AUDIO_DEVICE_OUT = 1 
@@ -97,7 +99,7 @@ def resample_audio(data, orig_sr, target_sr):
 def record_and_transcribe(vosk_model,
                          threshold=0.013,
                          max_initial_silence=10.0,
-                         trailing_silence=6.0,
+                         trailing_silence=6.5,
                          sr=48000,
                          device_index=1,
                          on_hook_check=None):
@@ -112,7 +114,7 @@ def record_and_transcribe(vosk_model,
         transcript: full transcribed text (or empty string)
     """
     # Recording parameters
-    block_dur = 0.35  # 350 ms blocks
+    block_dur = 0.20  # 200 ms blocks
     block_size = int(sr * block_dur)
     max_init_blocks = int(max_initial_silence / block_dur)
     trailing_blocks = int(trailing_silence / block_dur)
@@ -122,19 +124,62 @@ def record_and_transcribe(vosk_model,
     trailing_cnt = 0
     frames = []
     
-    # Transcription setup
-    rec = KaldiRecognizer(vosk_model, sr)
+    # Transcription setup with threading
+    audio_queue = queue.Queue()
     transcript_parts = []
+    transcript_lock = threading.Lock()
+    stop_transcription = threading.Event()
     
-    # Audio buffer for transcription (convert float32 to int16)
-    def float32_to_int16(audio_data):
-        """Convert float32 audio data to int16 for Vosk"""
-        # Ensure we have the right shape and range
-        if audio_data.ndim > 1:
-            audio_data = audio_data.flatten()
-        # Clip to [-1.0, 1.0] range and convert to int16
-        audio_clipped = np.clip(audio_data, -1.0, 1.0)
-        return (audio_clipped * 32767).astype(np.int16)
+    def transcription_worker():
+        """Background thread for processing audio transcription"""
+        rec = KaldiRecognizer(vosk_model, sr)
+        
+        def float32_to_int16(audio_data):
+            """Convert float32 audio data to int16 for Vosk"""
+            if audio_data.ndim > 1:
+                audio_data = audio_data.flatten()
+            audio_clipped = np.clip(audio_data, -1.0, 1.0)
+            return (audio_clipped * 32767).astype(np.int16)
+        
+        while not stop_transcription.is_set():
+            try:
+                # Get audio chunk from queue (timeout so we can check stop_transcription)
+                audio_chunk = audio_queue.get(timeout=0.1)
+                
+                # Process with Vosk
+                int16_data = float32_to_int16(audio_chunk)
+                if rec.AcceptWaveform(int16_data.tobytes()):
+                    try:
+                        result = json.loads(rec.Result())
+                        text = result.get("text", "")
+                        if text.strip():
+                            with transcript_lock:
+                                transcript_parts.append(text.strip())
+                            print(f"[LIVE TRANSCRIPT]: {text}")
+                    except json.JSONDecodeError:
+                        pass
+                        
+                audio_queue.task_done()
+                
+            except queue.Empty:
+                continue  # Check stop_transcription flag
+            except Exception as e:
+                print(f"[TRANSCRIPTION WARNING]: {e}")
+        
+        # Process any remaining audio and get final result
+        try:
+            final_result = json.loads(rec.FinalResult())
+            final_text = final_result.get("text", "")
+            if final_text.strip():
+                with transcript_lock:
+                    transcript_parts.append(final_text.strip())
+                print(f"[FINAL TRANSCRIPT]: {final_text}")
+        except json.JSONDecodeError:
+            print("[WARNING]: Could not parse final transcription result")
+    
+    # Start transcription worker thread
+    transcription_thread = threading.Thread(target=transcription_worker, daemon=True)
+    transcription_thread.start()
 
     with sd.InputStream(channels=1,
                         samplerate=sr,
@@ -164,23 +209,12 @@ def record_and_transcribe(vosk_model,
                     if max_init_blocks <= 0:
                         return "silence", None, ""
             
-            # Process audio for transcription (lower priority, can be slower)
+            # Send audio to transcription thread (non-blocking)
             try:
-                int16_data = float32_to_int16(data)
-                if rec.AcceptWaveform(int16_data.tobytes()):
-                    # Get partial result
-                    try:
-                        result = json.loads(rec.Result())
-                        text = result.get("text", "")
-                        if text.strip():
-                            transcript_parts.append(text.strip())
-                            print(f"[LIVE TRANSCRIPT]: {text}")
-                    except json.JSONDecodeError:
-                        # Skip malformed JSON responses
-                        pass
-            except Exception as e:
-                # Don't let transcription errors affect recording
-                print(f"[TRANSCRIPTION WARNING]: {e}")
+                audio_queue.put_nowait(data.copy())
+            except queue.Full:
+                # If queue is full, skip this chunk - audio recording continues
+                print("[TRANSCRIPTION]: Queue full, skipping chunk")
                         
             # Check for silence to end recording (only after speech detected)
             if speech_detected:
@@ -189,15 +223,14 @@ def record_and_transcribe(vosk_model,
                     print("[RECORDING]: Silence detected, ending recording...")
                     break
 
-    # Get final transcription result
-    try:
-        final_result = json.loads(rec.FinalResult())
-        final_text = final_result.get("text", "")
-        if final_text.strip():
-            transcript_parts.append(final_text.strip())
-            print(f"[FINAL TRANSCRIPT]: {final_text}")
-    except json.JSONDecodeError:
-        print("[WARNING]: Could not parse final transcription result")
+    # Stop transcription thread and wait for it to finish
+    stop_transcription.set()
+    
+    # Wait for transcription queue to be processed
+    audio_queue.join()
+    
+    # Wait for transcription thread to complete
+    transcription_thread.join(timeout=2.0)
     
     # Combine all audio frames
     if frames:
@@ -205,8 +238,9 @@ def record_and_transcribe(vosk_model,
     else:
         audio_np = np.array([])
     
-    # Combine all transcript parts
-    full_transcript = " ".join(transcript_parts).strip()
+    # Combine all transcript parts (thread-safe)
+    with transcript_lock:
+        full_transcript = " ".join(transcript_parts).strip()
     
     print(f"[RECORDING COMPLETE]: Audio length: {len(audio_np)} samples, Transcript: '{full_transcript[:50]}{'...' if len(full_transcript) > 50 else ''}'")
     
