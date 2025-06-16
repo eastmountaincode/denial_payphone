@@ -145,25 +145,14 @@ def record_and_transcribe(vosk_model,
             if on_hook_check and on_hook_check():
                 return "on_hook", None, ""
 
+            # Read audio data (this must be fast and not block)
             data, _ = stream.read(block_size)
-            rms = np.sqrt(np.mean(data ** 2))
             
-            # Always store audio data (start recording immediately)
+            # Always store audio data immediately (highest priority)
             frames.append(data.copy())
             
-            # Always process audio for transcription (start transcribing immediately)
-            int16_data = float32_to_int16(data)
-            if rec.AcceptWaveform(int16_data.tobytes()):
-                # Get partial result
-                try:
-                    result = json.loads(rec.Result())
-                    text = result.get("text", "")
-                    if text.strip():
-                        transcript_parts.append(text.strip())
-                        print(f"[LIVE TRANSCRIPT]: {text}")
-                except json.JSONDecodeError:
-                    # Skip malformed JSON responses
-                    pass
+            # Calculate RMS for speech detection
+            rms = np.sqrt(np.mean(data ** 2))
             
             # Check if we've detected speech for the first time
             if not speech_detected:
@@ -174,6 +163,24 @@ def record_and_transcribe(vosk_model,
                     max_init_blocks -= 1
                     if max_init_blocks <= 0:
                         return "silence", None, ""
+            
+            # Process audio for transcription (lower priority, can be slower)
+            try:
+                int16_data = float32_to_int16(data)
+                if rec.AcceptWaveform(int16_data.tobytes()):
+                    # Get partial result
+                    try:
+                        result = json.loads(rec.Result())
+                        text = result.get("text", "")
+                        if text.strip():
+                            transcript_parts.append(text.strip())
+                            print(f"[LIVE TRANSCRIPT]: {text}")
+                    except json.JSONDecodeError:
+                        # Skip malformed JSON responses
+                        pass
+            except Exception as e:
+                # Don't let transcription errors affect recording
+                print(f"[TRANSCRIPTION WARNING]: {e}")
                         
             # Check for silence to end recording (only after speech detected)
             if speech_detected:
