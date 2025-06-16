@@ -22,11 +22,12 @@ class SessionAbort(Exception):
     pass
 
 class SessionEngine:
-    def __init__(self, sensor, root, audio_dir, vosk_model):
+    def __init__(self, sensor, root, audio_dir, vosk_model, fasttext_model):
         self.sensor      = sensor
         self.root        = Path(root)
         self.audio_dir   = Path(audio_dir)
         self.vosk_model  = vosk_model
+        self.fasttext_model = fasttext_model
         
         # Make SessionAbort accessible to state handlers
         self.SessionAbort = SessionAbort
@@ -76,13 +77,13 @@ class SessionEngine:
 
 
 # -------- Drop-in replacement function for orchestrator --------
-def run_session(sensor, ROOT_DIR, AUDIO_DIR, vosk_model):
+def run_session(sensor, ROOT_DIR, AUDIO_DIR, vosk_model, fasttext_model):
     """
     Drop-in replacement for the original run_session function.
     This allows the orchestrator to remain unchanged.
     """
     try:
-        engine = SessionEngine(sensor, ROOT_DIR, AUDIO_DIR, vosk_model)
+        engine = SessionEngine(sensor, ROOT_DIR, AUDIO_DIR, vosk_model, fasttext_model)
         engine.run()
     except Exception as e:
         print(f"FSM run_session error: {e}") 

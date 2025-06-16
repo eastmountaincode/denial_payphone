@@ -91,10 +91,6 @@ def handle_confession_record_and_transcribe(engine):
         
         break
 
-    # Play post-confession message
-    if not play_and_log("post_confession_message.wav", str(engine.audio_dir), engine.sensor, engine.session_id, "post confession msg disconnect"):
-        raise engine.SessionAbort
-
-    # Move to next state - post confession info request
-    print("FSM: Confession recording and transcription completed - moving to post confession info request")
-    return S.POST_CONFESSION_INFO_REQUEST 
+    # Move to sentiment analysis state
+    print("FSM: Confession recording and transcription completed - moving to sentiment analysis")
+    return S.CONFESSION_ANALYZE_SENTIMENT 

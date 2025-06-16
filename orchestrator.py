@@ -4,6 +4,7 @@ import time
 from datetime import datetime
 import sounddevice as sd
 from vosk import Model
+import fasttext
 
 # In-house libraries
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -23,12 +24,16 @@ ROOT_DIR = "/home/denial/denial_payphone/payphone"
 AUDIO_DIR = "/home/denial/denial_payphone/payphone/audio_files/prod_2025_06_13"
 
 VOSK_MODEL_PATH  = "/home/denial/denial_payphone/vosk/models/vosk-model-small-en-us-0.15"
+FASTTEXT_MODEL_PATH = "/home/denial/denial_payphone/fasttext/crawl-80d-2M-subword.bin"
 
 
 class Orchestrator:
     def __init__(self):
         self.sensor = init_proximity_sensor()
         self.vosk_model = Model(VOSK_MODEL_PATH)
+        print("Loading fastText model...")
+        self.fasttext_model = fasttext.load_model(FASTTEXT_MODEL_PATH)
+        print("fastText model loaded successfully.")
 
     def orchestrator_loop(self):
         print("System ready. Waiting for next user.")
@@ -42,7 +47,8 @@ class Orchestrator:
             run_session(self.sensor,
                         ROOT_DIR,
                         AUDIO_DIR, 
-                        self.vosk_model)
+                        self.vosk_model,
+                        self.fasttext_model)
 
             print("Session ended. Waiting for phone to go back on-hook...")
             wait_for_on_hook(self.sensor)

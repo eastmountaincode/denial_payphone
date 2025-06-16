@@ -7,6 +7,7 @@ class S(Enum):
     CONFESSION_INQUIRY            = auto()
     CONFESSION_RECORD             = auto()
     CONFESSION_RECORD_AND_TRANSCRIBE = auto()
+    CONFESSION_ANALYZE_SENTIMENT  = auto()
     POST_CONFESSION_INFO_REQUEST  = auto()
     POST_CONFESSION_INFO_RECORD   = auto()
     READY_TO_GO_INQUIRY           = auto()
