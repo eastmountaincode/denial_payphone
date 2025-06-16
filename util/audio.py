@@ -95,7 +95,7 @@ def resample_audio(data, orig_sr, target_sr):
     return resampled.astype('float32'), target_sr
 
 def record_and_transcribe(vosk_model,
-                         threshold=0.03,
+                         threshold=0.015,
                          max_initial_silence=10.0,
                          trailing_silence=6.0,
                          sr=48000,
