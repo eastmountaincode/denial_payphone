@@ -111,16 +111,16 @@ def record_and_transcribe(vosk_model,
         audio_np_array: recorded audio as numpy array (or None)
         transcript: full transcribed text (or empty string)
     """
-    # Recording parameters - let PortAudio decide optimal buffering
-    # With blocksize=0, we don't control block size, so use time-based tracking
-    max_silence_time = max_initial_silence
-    trailing_silence_time = trailing_silence
-    silence_start_time = None
+    # Recording parameters
+    block_dur = 0.35  # 350 ms blocks
+    block_size = int(sr * block_dur)
+    max_init_blocks = int(max_initial_silence / block_dur)
+    trailing_blocks = int(trailing_silence / block_dur)
     
     # Recording state
     speech_detected = False
+    trailing_cnt = 0
     frames = []
-    recording_start_time = time.time()
     
     # Transcription setup
     rec = KaldiRecognizer(vosk_model, sr)
@@ -138,7 +138,7 @@ def record_and_transcribe(vosk_model,
 
     with sd.InputStream(channels=1,
                         samplerate=sr,
-                        blocksize=0,  # Let PortAudio choose optimal buffer size
+                        blocksize=block_size,
                         device=device_index,
                         dtype='float32',
                         latency='low') as stream:
@@ -146,28 +146,23 @@ def record_and_transcribe(vosk_model,
             if on_hook_check and on_hook_check():
                 return "on_hook", None, ""
 
-            # Read audio data (PortAudio decides how much)
-            data, _ = stream.read(stream.read_available)
+            # Read audio data (this must be fast and not block)
+            data, _ = stream.read(block_size)
             
-            if len(data) == 0:  # No data available, continue
-                continue
-                
             # Always store audio data immediately (highest priority)
             frames.append(data.copy())
             
             # Calculate RMS for speech detection
             rms = np.sqrt(np.mean(data ** 2))
-            current_time = time.time()
             
             # Check if we've detected speech for the first time
             if not speech_detected:
                 if rms >= threshold:
                     speech_detected = True
-                    silence_start_time = None  # Reset silence tracking
                     print("[RECORDING]: Speech detected...")
                 else:
-                    # Check if we've been silent too long
-                    if current_time - recording_start_time > max_silence_time:
+                    max_init_blocks -= 1
+                    if max_init_blocks <= 0:
                         return "silence", None, ""
             
             # Process audio for transcription (lower priority, can be slower)
@@ -190,16 +185,10 @@ def record_and_transcribe(vosk_model,
                         
             # Check for silence to end recording (only after speech detected)
             if speech_detected:
-                if rms < threshold:
-                    # Start tracking silence
-                    if silence_start_time is None:
-                        silence_start_time = current_time
-                    elif current_time - silence_start_time > trailing_silence_time:
-                        print("[RECORDING]: Silence detected, ending recording...")
-                        break
-                else:
-                    # Reset silence tracking if we hear speech again
-                    silence_start_time = None
+                trailing_cnt = trailing_cnt + 1 if rms < threshold else 0
+                if trailing_cnt >= trailing_blocks:
+                    print("[RECORDING]: Silence detected, ending recording...")
+                    break
 
     # Get final transcription result
     try:
