@@ -2,12 +2,7 @@
 
 import os
 from session_states import S
-
-import sys
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-UTIL_DIR = os.path.join(BASE_DIR, "util")
-if UTIL_DIR not in sys.path:
-    sys.path.insert(0, UTIL_DIR)
+import fsm.common  # Setup paths to util directory
 
 from general_util import play_and_log
 from proximity import is_on_hook

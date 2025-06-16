@@ -1,23 +1,17 @@
 # fsm/states/confession_analyze_sentiment.py
 
 import os
-import sys
 import numpy as np
 import pickle
 from session_states import S
-
-# Import utilities
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-UTIL_DIR = os.path.join(BASE_DIR, "util")
-if UTIL_DIR not in sys.path:
-    sys.path.insert(0, UTIL_DIR)
+import fsm.common  # Setup paths to util directory
 
 from general_util import play_and_log
 from proximity import is_on_hook
 from log import log_event
 
 # Path to precomputed centroid files
-SENTIMENT_DIR = os.path.join(UTIL_DIR, "sentiment")
+SENTIMENT_DIR = os.path.join(fsm.common.UTIL_DIR, "sentiment")
 SERIOUS_CENTROID_FILE = os.path.join(SENTIMENT_DIR, "serious_centroid.pkl")
 SILLY_CENTROID_FILE = os.path.join(SENTIMENT_DIR, "silly_centroid.pkl")
 
