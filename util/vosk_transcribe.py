@@ -84,7 +84,7 @@ def vosk_transcribe(vosk_model, max_initial_silence=6, on_hook_check=None):
         return result_text.strip()
 
 
-def transcription_worker(vosk_model, sr, audio_queue, transcript_parts, transcript_lock, stop_transcription, speech_detected_event=None):
+def transcription_worker(vosk_model, sr, audio_queue, transcript_parts, transcript_lock, stop_transcription, speech_detected_event=None, last_word_time=None):
     """Background thread worker for processing audio transcription"""
     rec = KaldiRecognizer(vosk_model, sr)
     
@@ -113,6 +113,9 @@ def transcription_worker(vosk_model, sr, audio_queue, transcript_parts, transcri
                         # Signal that we've detected speech via transcription
                         if speech_detected_event:
                             speech_detected_event.set()
+                        # Update last word timestamp
+                        if last_word_time is not None:
+                            last_word_time['time'] = time.time()
                 except json.JSONDecodeError:
                     pass
                     
@@ -131,6 +134,12 @@ def transcription_worker(vosk_model, sr, audio_queue, transcript_parts, transcri
             with transcript_lock:
                 transcript_parts.append(final_text.strip())
             print(f"[FINAL TRANSCRIPT]: {final_text}")
+            # Signal that we've detected speech via transcription
+            if speech_detected_event:
+                speech_detected_event.set()
+            # Update last word timestamp
+            if last_word_time is not None:
+                last_word_time['time'] = time.time() 
     except json.JSONDecodeError:
         print("[WARNING]: Could not parse final transcription result")
 

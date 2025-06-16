@@ -129,11 +129,12 @@ def record_and_transcribe(vosk_model,
     transcript_lock = threading.Lock()
     stop_transcription = threading.Event()
     speech_detected_by_vosk = threading.Event()  # Signal from transcription worker
+    last_word_time = {'time': None}  # Shared timestamp for last transcribed word
     
     # Start transcription worker thread
     transcription_thread = threading.Thread(
         target=transcription_worker, 
-        args=(vosk_model, sr, audio_queue, transcript_parts, transcript_lock, stop_transcription, speech_detected_by_vosk),
+        args=(vosk_model, sr, audio_queue, transcript_parts, transcript_lock, stop_transcription, speech_detected_by_vosk, last_word_time),
         daemon=True
     )
     transcription_thread.start()
@@ -177,10 +178,22 @@ def record_and_transcribe(vosk_model,
                         
             # Check for silence to end recording (only after speech detected)
             if speech_detected:
-                trailing_cnt = trailing_cnt + 1 if rms < threshold else 0
-                if trailing_cnt >= trailing_blocks:
-                    print("[RECORDING]: Silence detected, ending recording...")
-                    break
+                # Check RMS silence
+                rms_silence = rms < threshold
+                
+                # Check Vosk silence (no words for trailing_silence duration)
+                current_time = time.time()
+                vosk_silence = (last_word_time['time'] is None or 
+                               (current_time - last_word_time['time']) > trailing_silence)
+                
+                # Only count as silence if BOTH RMS and Vosk indicate silence
+                if rms_silence and vosk_silence:
+                    trailing_cnt += 1
+                    if trailing_cnt >= trailing_blocks:
+                        print("[RECORDING]: Dual silence detected (amplitude + transcription), ending recording...")
+                        break
+                else:
+                    trailing_cnt = 0  # Reset if either RMS or Vosk indicates activity
 
     # Stop transcription thread and wait for it to finish
     stop_transcription.set()
