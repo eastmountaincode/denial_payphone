@@ -5,7 +5,6 @@ class S(Enum):
     INTRO                         = auto()
     POCKETS_Q                     = auto()
     CONFESSION_INQUIRY            = auto()
-    CONFESSION_RECORD             = auto()
     CONFESSION_RECORD_AND_TRANSCRIBE = auto()
     CONFESSION_ANALYZE_SENTIMENT  = auto()
     POST_CONFESSION_INFO_REQUEST  = auto()

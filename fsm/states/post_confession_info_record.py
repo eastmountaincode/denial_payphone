@@ -13,7 +13,7 @@ if UTIL_DIR not in sys.path:
 from general_util import play_and_log
 from proximity import is_on_hook
 from log import log_event
-from audio import record_confession
+from audio import record_and_transcribe
 import soundfile as sf
 
 # Constants from original code
@@ -40,9 +40,10 @@ def handle_post_confession_info_record(engine):
     
     # Info recording loop with silence retry logic
     while silence_count < MAX_SILENCE_COUNT:
-        # Start recording user info
-        log_event(engine.session_id, "recording_user_info...")
-        status, audio_np = record_confession(
+        # Start recording and transcribing user info
+        log_event(engine.session_id, "recording_and_transcribing_user_info...")
+        status, audio_np, transcript = record_and_transcribe(
+            vosk_model=engine.vosk_model,
             threshold=LISTEN_FOR_AMPL_THRESH,
             on_hook_check=lambda: is_on_hook(engine.sensor)
         )
@@ -67,11 +68,20 @@ def handle_post_confession_info_record(engine):
             print(f"FSM: Silence detected during info recording, attempt {silence_count}/{MAX_SILENCE_COUNT}")
             continue  # retry
 
-        # status == "audio" - save the info recording
+        # status == "audio" - save the info recording and transcript
         info_path = os.path.join(str(engine.session_folder), f"info_{engine.session_id}.wav")
         sf.write(info_path, audio_np, VOSK_SR)
         log_event(engine.session_id, "info_audio_saved", info_path)
+        
+        # Save the transcript
+        info_transcript_path = os.path.join(str(engine.session_folder), f"info_transcript_{engine.session_id}.txt")
+        with open(info_transcript_path, 'w', encoding='utf-8') as f:
+            f.write(transcript)
+        log_event(engine.session_id, "info_transcript_saved", info_transcript_path)
+        
         print(f"FSM: User info recorded and saved to {info_path}")
+        print(f"FSM: Info transcript saved to {info_transcript_path}")
+        print(f"FSM: Info transcript preview: {transcript[:100]}..." if len(transcript) > 100 else f"FSM: Full info transcript: {transcript}")
         break  # finished recording
 
     # Move to next state - ready to go inquiry
