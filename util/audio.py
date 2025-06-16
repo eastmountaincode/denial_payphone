@@ -98,7 +98,7 @@ def resample_audio(data, orig_sr, target_sr):
 def record_and_transcribe(vosk_model,
                          threshold=0.013,
                          max_initial_silence=10.0,
-                         trailing_silence=5.0,
+                         trailing_silence=4.5,
                          sr=48000,
                          device_index=1,
                          on_hook_check=None):
@@ -113,7 +113,7 @@ def record_and_transcribe(vosk_model,
         transcript: full transcribed text (or empty string)
     """
     # Recording parameters
-    block_dur = 0.20  # 200 ms blocks
+    block_dur = 0.15  # 150 ms blocks
     block_size = int(sr * block_dur)
     max_init_blocks = int(max_initial_silence / block_dur)
     trailing_blocks = int(trailing_silence / block_dur)
