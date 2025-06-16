@@ -112,13 +112,13 @@ def record_and_transcribe(vosk_model,
         transcript: full transcribed text (or empty string)
     """
     # Recording parameters
-    block_dur = 0.25  # 100 ms blocks
+    block_dur = 0.3  # 100 ms blocks
     block_size = int(sr * block_dur)
     max_init_blocks = int(max_initial_silence / block_dur)
     trailing_blocks = int(trailing_silence / block_dur)
     
     # Recording state
-    started = False
+    speech_detected = False
     trailing_cnt = 0
     frames = []
     
@@ -148,39 +148,35 @@ def record_and_transcribe(vosk_model,
             data, _ = stream.read(block_size)
             rms = np.sqrt(np.mean(data ** 2))
             
-            # Always store audio data if we've started recording
-            if not started:
+            # Always store audio data (start recording immediately)
+            frames.append(data.copy())
+            
+            # Always process audio for transcription (start transcribing immediately)
+            int16_data = float32_to_int16(data)
+            if rec.AcceptWaveform(int16_data.tobytes()):
+                # Get partial result
+                try:
+                    result = json.loads(rec.Result())
+                    text = result.get("text", "")
+                    if text.strip():
+                        transcript_parts.append(text.strip())
+                        print(f"[LIVE TRANSCRIPT]: {text}")
+                except json.JSONDecodeError:
+                    # Skip malformed JSON responses
+                    pass
+            
+            # Check if we've detected speech for the first time
+            if not speech_detected:
                 if rms >= threshold:
-                    started = True
-                    print("[RECORDING]: Speech detected, starting recording and transcription...")
-                    # Store this initial chunk
-                    frames.append(data.copy())
-                    # Process for transcription
-                    int16_data = float32_to_int16(data)
-                    rec.AcceptWaveform(int16_data.tobytes())
+                    speech_detected = True
+                    print("[RECORDING]: Speech detected...")
                 else:
                     max_init_blocks -= 1
                     if max_init_blocks <= 0:
                         return "silence", None, ""
-            else:
-                # Continue recording
-                frames.append(data.copy())
-                
-                # Process audio chunk for transcription
-                int16_data = float32_to_int16(data)
-                if rec.AcceptWaveform(int16_data.tobytes()):
-                    # Get partial result
-                    try:
-                        result = json.loads(rec.Result())
-                        text = result.get("text", "")
-                        if text.strip():
-                            transcript_parts.append(text.strip())
-                            print(f"[LIVE TRANSCRIPT]: {text}")
-                    except json.JSONDecodeError:
-                        # Skip malformed JSON responses
-                        pass
-                
-                # Check for silence to end recording
+                        
+            # Check for silence to end recording (only after speech detected)
+            if speech_detected:
                 trailing_cnt = trailing_cnt + 1 if rms < threshold else 0
                 if trailing_cnt >= trailing_blocks:
                     print("[RECORDING]: Silence detected, ending recording...")
