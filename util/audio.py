@@ -6,6 +6,7 @@ import time
 import threading
 import queue
 from vosk_transcribe import transcription_worker
+from pydub import AudioSegment
 
 AUDIO_DEVICE_OUT = 1 
 AUDIO_DEVICE_IN = 1   
@@ -217,5 +218,54 @@ def record_and_transcribe(vosk_model,
     print(f"[RECORDING COMPLETE]: Audio length: {len(audio_np)} samples, Transcript: '{full_transcript[:50]}{'...' if len(full_transcript) > 50 else ''}'")
     
     return "audio", audio_np, full_transcript
+
+
+def save_audio_compressed(audio_np, sr, output_path, bitrate="128k"):
+    """
+    Save audio with 16-bit + MP3 compression and measure timing.
+    
+    Args:
+        audio_np: numpy audio array (float32)
+        sr: sample rate
+        output_path: path for output file (should end with .mp3)
+        bitrate: MP3 bitrate (default 128k for good quality/size balance)
+    
+    Returns:
+        dict with timing and size info
+    """
+    start_time = time.time()
+    
+    # Step 1: Convert to int16 for size reduction
+    audio_int16 = (np.clip(audio_np, -1.0, 1.0) * 32767).astype(np.int16)
+    int16_time = time.time()
+    
+    # Step 2: Create temporary WAV file (in memory would be better but this is simpler)
+    temp_wav_path = output_path.replace('.mp3', '_temp.wav')
+    sf.write(temp_wav_path, audio_int16, sr, subtype='PCM_16')
+    wav_time = time.time()
+    
+    # Step 3: Convert WAV to MP3 using pydub
+    audio_segment = AudioSegment.from_wav(temp_wav_path)
+    audio_segment.export(output_path, format="mp3", bitrate=bitrate)
+    mp3_time = time.time()
+    
+    # Step 4: Clean up temp file and get sizes
+    temp_size = os.path.getsize(temp_wav_path)
+    os.remove(temp_wav_path)
+    final_size = os.path.getsize(output_path)
+    
+    end_time = time.time()
+    
+    # Return timing and compression info
+    return {
+        'total_time': end_time - start_time,
+        'int16_conversion_time': int16_time - start_time,
+        'wav_write_time': wav_time - int16_time,
+        'mp3_conversion_time': mp3_time - wav_time,
+        'temp_size_bytes': temp_size,
+        'final_size_bytes': final_size,
+        'compression_ratio': temp_size / final_size,
+        'size_reduction_percent': (1 - final_size / temp_size) * 100
+    }
 
 

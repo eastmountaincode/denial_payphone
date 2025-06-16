@@ -13,7 +13,7 @@ if UTIL_DIR not in sys.path:
 from general_util import play_and_log
 from proximity import is_on_hook
 from log import log_event
-from audio import record_and_transcribe
+from audio import record_and_transcribe, save_audio_compressed
 import soundfile as sf
 
 # Constants from original code
@@ -75,10 +75,20 @@ def handle_confession_record_and_transcribe(engine):
         # status == "audio" - save the confession and transcript
         print(f"FSM: Recording completed. Transcript length: {len(transcript)} characters")
         
-        # Save the audio file
-        confession_path = os.path.join(str(engine.session_folder), f"confession_{engine.session_id}.wav")
-        sf.write(confession_path, audio_np, VOSK_SR)
+        # Save the audio file with compression
+        confession_path = os.path.join(str(engine.session_folder), f"confession_{engine.session_id}.mp3")
+        compression_info = save_audio_compressed(audio_np, VOSK_SR, confession_path)
+        
+        # Log compression results
         log_event(engine.session_id, "confession_audio_saved", confession_path)
+        log_event(engine.session_id, "compression_timing", {
+            "total_time": f"{compression_info['total_time']:.3f}s",
+            "mp3_conversion_time": f"{compression_info['mp3_conversion_time']:.3f}s", 
+            "size_reduction": f"{compression_info['size_reduction_percent']:.1f}%",
+            "original_size_mb": f"{compression_info['temp_size_bytes'] / 1024 / 1024:.1f}MB",
+            "compressed_size_mb": f"{compression_info['final_size_bytes'] / 1024 / 1024:.1f}MB"
+        })
+        print(f"[COMPRESSION]: Total time: {compression_info['total_time']:.3f}s, Size reduction: {compression_info['size_reduction_percent']:.1f}%")
         
         # Save the transcript
         transcript_path = os.path.join(str(engine.session_folder), f"confession_transcript_{engine.session_id}.txt")
