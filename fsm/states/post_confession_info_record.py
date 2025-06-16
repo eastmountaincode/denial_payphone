@@ -18,7 +18,6 @@ import soundfile as sf
 
 # Constants from original code
 VOSK_SR = 48000  # Sample rate for audio recording
-LISTEN_FOR_AMPL_THRESH = 0.05  # Threshold for info recording
 MAX_SILENCE_COUNT = 2
 
 
@@ -44,7 +43,6 @@ def handle_post_confession_info_record(engine):
         log_event(engine.session_id, "recording_and_transcribing_user_info...")
         status, audio_np, transcript = record_and_transcribe(
             vosk_model=engine.vosk_model,
-            threshold=LISTEN_FOR_AMPL_THRESH,
             on_hook_check=lambda: is_on_hook(engine.sensor)
         )
 
