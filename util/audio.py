@@ -128,11 +128,12 @@ def record_and_transcribe(vosk_model,
     transcript_parts = []
     transcript_lock = threading.Lock()
     stop_transcription = threading.Event()
+    speech_detected_by_vosk = threading.Event()  # Signal from transcription worker
     
     # Start transcription worker thread
     transcription_thread = threading.Thread(
         target=transcription_worker, 
-        args=(vosk_model, sr, audio_queue, transcript_parts, transcript_lock, stop_transcription),
+        args=(vosk_model, sr, audio_queue, transcript_parts, transcript_lock, stop_transcription, speech_detected_by_vosk),
         daemon=True
     )
     transcription_thread.start()
@@ -157,9 +158,11 @@ def record_and_transcribe(vosk_model,
             
             # Check if we've detected speech for the first time
             if not speech_detected:
-                if rms >= threshold:
+                # Check both RMS threshold AND if Vosk has detected speech
+                if rms >= threshold or speech_detected_by_vosk.is_set():
                     speech_detected = True
-                    print("[RECORDING]: Speech detected...")
+                    detection_method = "amplitude" if rms >= threshold else "transcription"
+                    print(f"[RECORDING]: Speech detected via {detection_method}...")
                 else:
                     max_init_blocks -= 1
                     if max_init_blocks <= 0:

@@ -84,7 +84,7 @@ def vosk_transcribe(vosk_model, max_initial_silence=6, on_hook_check=None):
         return result_text.strip()
 
 
-def transcription_worker(vosk_model, sr, audio_queue, transcript_parts, transcript_lock, stop_transcription):
+def transcription_worker(vosk_model, sr, audio_queue, transcript_parts, transcript_lock, stop_transcription, speech_detected_event=None):
     """Background thread worker for processing audio transcription"""
     rec = KaldiRecognizer(vosk_model, sr)
     
@@ -110,6 +110,9 @@ def transcription_worker(vosk_model, sr, audio_queue, transcript_parts, transcri
                         with transcript_lock:
                             transcript_parts.append(text.strip())
                         print(f"[LIVE TRANSCRIPT]: {text}")
+                        # Signal that we've detected speech via transcription
+                        if speech_detected_event:
+                            speech_detected_event.set()
                 except json.JSONDecodeError:
                     pass
                     
