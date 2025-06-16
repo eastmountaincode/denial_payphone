@@ -3,10 +3,9 @@ import sounddevice as sd
 import soundfile as sf
 import numpy as np
 import time
-import json
 import threading
 import queue
-from vosk import KaldiRecognizer
+from vosk_transcribe import transcription_worker
 
 AUDIO_DEVICE_OUT = 1 
 AUDIO_DEVICE_IN = 1   
@@ -99,7 +98,7 @@ def resample_audio(data, orig_sr, target_sr):
 def record_and_transcribe(vosk_model,
                          threshold=0.013,
                          max_initial_silence=10.0,
-                         trailing_silence=6.5,
+                         trailing_silence=5.0,
                          sr=48000,
                          device_index=1,
                          on_hook_check=None):
@@ -130,55 +129,12 @@ def record_and_transcribe(vosk_model,
     transcript_lock = threading.Lock()
     stop_transcription = threading.Event()
     
-    def transcription_worker():
-        """Background thread for processing audio transcription"""
-        rec = KaldiRecognizer(vosk_model, sr)
-        
-        def float32_to_int16(audio_data):
-            """Convert float32 audio data to int16 for Vosk"""
-            if audio_data.ndim > 1:
-                audio_data = audio_data.flatten()
-            audio_clipped = np.clip(audio_data, -1.0, 1.0)
-            return (audio_clipped * 32767).astype(np.int16)
-        
-        while not stop_transcription.is_set():
-            try:
-                # Get audio chunk from queue (timeout so we can check stop_transcription)
-                audio_chunk = audio_queue.get(timeout=0.1)
-                
-                # Process with Vosk
-                int16_data = float32_to_int16(audio_chunk)
-                if rec.AcceptWaveform(int16_data.tobytes()):
-                    try:
-                        result = json.loads(rec.Result())
-                        text = result.get("text", "")
-                        if text.strip():
-                            with transcript_lock:
-                                transcript_parts.append(text.strip())
-                            print(f"[LIVE TRANSCRIPT]: {text}")
-                    except json.JSONDecodeError:
-                        pass
-                        
-                audio_queue.task_done()
-                
-            except queue.Empty:
-                continue  # Check stop_transcription flag
-            except Exception as e:
-                print(f"[TRANSCRIPTION WARNING]: {e}")
-        
-        # Process any remaining audio and get final result
-        try:
-            final_result = json.loads(rec.FinalResult())
-            final_text = final_result.get("text", "")
-            if final_text.strip():
-                with transcript_lock:
-                    transcript_parts.append(final_text.strip())
-                print(f"[FINAL TRANSCRIPT]: {final_text}")
-        except json.JSONDecodeError:
-            print("[WARNING]: Could not parse final transcription result")
-    
     # Start transcription worker thread
-    transcription_thread = threading.Thread(target=transcription_worker, daemon=True)
+    transcription_thread = threading.Thread(
+        target=transcription_worker, 
+        args=(vosk_model, sr, audio_queue, transcript_parts, transcript_lock, stop_transcription),
+        daemon=True
+    )
     transcription_thread.start()
 
     with sd.InputStream(channels=1,

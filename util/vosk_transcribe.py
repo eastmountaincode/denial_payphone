@@ -4,6 +4,7 @@ import queue
 import json
 import sounddevice as sd
 import numpy as np
+import threading
 from vosk import KaldiRecognizer
 import time
 
@@ -81,4 +82,52 @@ def vosk_transcribe(vosk_model, max_initial_silence=6, on_hook_check=None):
             print("Final:", final_txt)
             result_text += final_txt
         return result_text.strip()
+
+
+def transcription_worker(vosk_model, sr, audio_queue, transcript_parts, transcript_lock, stop_transcription):
+    """Background thread worker for processing audio transcription"""
+    rec = KaldiRecognizer(vosk_model, sr)
+    
+    def float32_to_int16(audio_data):
+        """Convert float32 audio data to int16 for Vosk"""
+        if audio_data.ndim > 1:
+            audio_data = audio_data.flatten()
+        audio_clipped = np.clip(audio_data, -1.0, 1.0)
+        return (audio_clipped * 32767).astype(np.int16)
+    
+    while not stop_transcription.is_set():
+        try:
+            # Get audio chunk from queue (timeout so we can check stop_transcription)
+            audio_chunk = audio_queue.get(timeout=0.1)
+            
+            # Process with Vosk
+            int16_data = float32_to_int16(audio_chunk)
+            if rec.AcceptWaveform(int16_data.tobytes()):
+                try:
+                    result = json.loads(rec.Result())
+                    text = result.get("text", "")
+                    if text.strip():
+                        with transcript_lock:
+                            transcript_parts.append(text.strip())
+                        print(f"[LIVE TRANSCRIPT]: {text}")
+                except json.JSONDecodeError:
+                    pass
+                    
+            audio_queue.task_done()
+            
+        except queue.Empty:
+            continue  # Check stop_transcription flag
+        except Exception as e:
+            print(f"[TRANSCRIPTION WARNING]: {e}")
+    
+    # Process any remaining audio and get final result
+    try:
+        final_result = json.loads(rec.FinalResult())
+        final_text = final_result.get("text", "")
+        if final_text.strip():
+            with transcript_lock:
+                transcript_parts.append(final_text.strip())
+            print(f"[FINAL TRANSCRIPT]: {final_text}")
+    except json.JSONDecodeError:
+        print("[WARNING]: Could not parse final transcription result")
 
