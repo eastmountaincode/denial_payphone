@@ -220,7 +220,7 @@ def record_and_transcribe(vosk_model,
     return "audio", audio_np, full_transcript
 
 
-def save_audio_compressed(audio_np, sr, output_path, compression_level=5):
+def save_audio_compressed(audio_np, sr, output_path):
     """
     Save audio with 16-bit FLAC compression and measure timing.
     
@@ -228,7 +228,6 @@ def save_audio_compressed(audio_np, sr, output_path, compression_level=5):
         audio_np: numpy audio array (float32)
         sr: sample rate
         output_path: path for output file (should end with .flac)
-        compression_level: FLAC compression level 0-8 (default 5 for good speed/size balance)
     
     Returns:
         dict with timing and size info
@@ -245,7 +244,7 @@ def save_audio_compressed(audio_np, sr, output_path, compression_level=5):
     wav_time = time.time()
     
     # Step 3: Save directly as FLAC (much faster than MP3)
-    sf.write(output_path, audio_int16, sr, subtype='PCM_16', format='FLAC', compression=compression_level)
+    sf.write(output_path, audio_int16, sr, subtype='PCM_16', format='FLAC')
     flac_time = time.time()
     
     # Step 4: Clean up temp file and get sizes
