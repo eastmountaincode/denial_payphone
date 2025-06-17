@@ -16,9 +16,12 @@ from fsm.states.ready_to_go_inquiry import handle_ready_to_go_inquiry
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UTIL_DIR = os.path.join(BASE_DIR, "util")
+DATABASE_DIR = os.path.join(BASE_DIR, "database")
 import sys
 if UTIL_DIR not in sys.path:
     sys.path.insert(0, UTIL_DIR)
+if DATABASE_DIR not in sys.path:
+    sys.path.insert(0, DATABASE_DIR)
 
 from log import log_event
 from general_util import create_session_folder, generate_unique_session_id
