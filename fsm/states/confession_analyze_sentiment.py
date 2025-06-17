@@ -10,17 +10,21 @@ import fsm.common  # Setup paths to util directory
 from general_util import play_and_log
 from log import log_event
 
-# Path to precomputed centroid files
+# Path to precomputed centroid files for 4 categories
 SENTIMENT_DIR = os.path.join(fsm.common.UTIL_DIR, "sentiment")
-SERIOUS_CENTROID_FILE = os.path.join(SENTIMENT_DIR, "serious_centroid.pkl")
-SILLY_CENTROID_FILE = os.path.join(SENTIMENT_DIR, "silly_centroid.pkl")
+VERY_SERIOUS_CENTROID_FILE = os.path.join(SENTIMENT_DIR, "very_serious_centroid.pkl")
+STANDARD_CENTROID_FILE = os.path.join(SENTIMENT_DIR, "standard_centroid.pkl")
+NON_SERIOUS_CENTROID_FILE = os.path.join(SENTIMENT_DIR, "non_serious_centroid.pkl")
+FUCKING_AROUND_CENTROID_FILE = os.path.join(SENTIMENT_DIR, "fucking_around_centroid.pkl")
 
 # Threshold for classification
 CLASSIFICATION_THRESHOLD = 0.02
 
 # Cached centroids (loaded once)
-_serious_centroid = None
-_silly_centroid = None
+_very_serious_centroid = None
+_standard_centroid = None
+_non_serious_centroid = None
+_fucking_around_centroid = None
 
 
 def sent_vec(text, model):
@@ -62,61 +66,72 @@ def cosine_similarity(vec1, vec2):
 
 def load_precomputed_centroids():
     """
-    Load precomputed centroids from pickle files.
+    Load precomputed centroids from pickle files for all 4 categories.
     """
-    global _serious_centroid, _silly_centroid
+    global _very_serious_centroid, _standard_centroid, _non_serious_centroid, _fucking_around_centroid
     
-    if _serious_centroid is None or _silly_centroid is None:
-        print("Loading precomputed sentiment centroids...")
+    if (_very_serious_centroid is None or _standard_centroid is None or 
+        _non_serious_centroid is None or _fucking_around_centroid is None):
+        print("Loading precomputed sentiment centroids for 4 categories...")
         
         # Check if centroid files exist
-        if not os.path.exists(SERIOUS_CENTROID_FILE):
-            raise FileNotFoundError(f"Serious centroid file not found: {SERIOUS_CENTROID_FILE}")
-        if not os.path.exists(SILLY_CENTROID_FILE):
-            raise FileNotFoundError(f"Silly centroid file not found: {SILLY_CENTROID_FILE}")
+        centroid_files = [
+            (VERY_SERIOUS_CENTROID_FILE, "Very serious"),
+            (STANDARD_CENTROID_FILE, "Standard"),
+            (NON_SERIOUS_CENTROID_FILE, "Non serious"),
+            (FUCKING_AROUND_CENTROID_FILE, "Fucking around")
+        ]
+        
+        for file_path, name in centroid_files:
+            if not os.path.exists(file_path):
+                raise FileNotFoundError(f"{name} centroid file not found: {file_path}")
         
         # Load centroids
-        with open(SERIOUS_CENTROID_FILE, 'rb') as f:
-            _serious_centroid = pickle.load(f)
+        with open(VERY_SERIOUS_CENTROID_FILE, 'rb') as f:
+            _very_serious_centroid = pickle.load(f)
         
-        with open(SILLY_CENTROID_FILE, 'rb') as f:
-            _silly_centroid = pickle.load(f)
+        with open(STANDARD_CENTROID_FILE, 'rb') as f:
+            _standard_centroid = pickle.load(f)
+            
+        with open(NON_SERIOUS_CENTROID_FILE, 'rb') as f:
+            _non_serious_centroid = pickle.load(f)
+            
+        with open(FUCKING_AROUND_CENTROID_FILE, 'rb') as f:
+            _fucking_around_centroid = pickle.load(f)
         
-        print(f"Loaded centroids - Serious: {_serious_centroid.shape}, Silly: {_silly_centroid.shape}")
+        print(f"Loaded centroids - Very serious: {_very_serious_centroid.shape}, "
+              f"Standard: {_standard_centroid.shape}, Non serious: {_non_serious_centroid.shape}, "
+              f"Fucking around: {_fucking_around_centroid.shape}")
     
-    return _serious_centroid, _silly_centroid
+    return _very_serious_centroid, _standard_centroid, _non_serious_centroid, _fucking_around_centroid
 
 
 def classify_sentiment(transcript, model):
     """
-    Classify transcript sentiment as serious, silly, or neutral.
-    Returns tuple: (classification, gap_score)
+    Classify transcript sentiment into one of 4 categories: very_serious, standard, non_serious, fucking_around.
+    Returns tuple: (classification, similarities_dict)
     """
     if not transcript.strip():
-        return "neutral", 0.0
+        return "standard", {}
     
     # Load precomputed centroids
-    serious_centroid, silly_centroid = load_precomputed_centroids()
+    very_serious_centroid, standard_centroid, non_serious_centroid, fucking_around_centroid = load_precomputed_centroids()
     
     # Convert transcript to vector
     test_vec = sent_vec(transcript, model)
     
-    # Calculate similarities
-    sim_serious = cosine_similarity(test_vec, serious_centroid)
-    sim_silly = cosine_similarity(test_vec, silly_centroid)
+    # Calculate similarities to all 4 centroids
+    similarities = {
+        "very_serious": cosine_similarity(test_vec, very_serious_centroid),
+        "standard": cosine_similarity(test_vec, standard_centroid),
+        "non_serious": cosine_similarity(test_vec, non_serious_centroid),
+        "fucking_around": cosine_similarity(test_vec, fucking_around_centroid)
+    }
     
-    # Calculate gap (positive = serious, negative = silly)
-    gap = sim_serious - sim_silly
+    # Find the category with highest similarity
+    classification = max(similarities, key=similarities.get)
     
-    # Classify based on threshold
-    if gap > CLASSIFICATION_THRESHOLD:
-        classification = "serious"
-    elif gap < -CLASSIFICATION_THRESHOLD:
-        classification = "silly"
-    else:
-        classification = "neutral"
-    
-    return classification, gap
+    return classification, similarities
 
 
 def handle_confession_analyze_sentiment(engine):
@@ -147,30 +162,37 @@ def handle_confession_analyze_sentiment(engine):
     
     # Perform sentiment classification
     log_event(engine.session_id, "sentiment_analysis_start")
-    print("FSM: Analyzing confession sentiment with fastText...")
+    print("FSM: Analyzing confession sentiment with fastText (4 categories)...")
     
-    classification, gap = classify_sentiment(transcript, engine.fasttext_model)
+    classification, similarities = classify_sentiment(transcript, engine.fasttext_model)
     
     # Log the results
     log_event(engine.session_id, "confession_classified", {
         "classification": classification,
-        "gap": gap,
+        "similarities": similarities,
         "transcript_length": len(transcript)
     })
     
-    print(f"FSM: Sentiment classification: {classification} (gap: {gap:.4f})")
+    print(f"FSM: Sentiment classification: {classification}")
+    print(f"FSM: Similarities: {similarities}")
     
     # Determine which audio file to play based on classification
-    # For now, using the same file as requested, but setting up the infrastructure
-    if classification == "serious":
-        audio_file = "post_confession_message.wav"  # TODO: Replace with serious_response.wav
-        log_description = "serious response"
-    elif classification == "silly":
-        audio_file = "post_confession_message.wav"  # TODO: Replace with silly_response.wav
-        log_description = "silly response"
-    else:  # neutral
-        audio_file = "post_confession_message.wav"  # TODO: Replace with neutral_response.wav
-        log_description = "neutral response"
+    if classification == "very_serious":
+        audio_file = "post_confession_message.wav"  # TODO: Replace with very_serious_response.wav
+        log_description = "very serious response"
+    elif classification == "standard":
+        audio_file = "post_confession_message.wav"  # TODO: Replace with standard_response.wav
+        log_description = "standard response"
+    elif classification == "non_serious":
+        audio_file = "post_confession_message.wav"  # TODO: Replace with non_serious_response.wav
+        log_description = "non serious response"
+    elif classification == "fucking_around":
+        audio_file = "post_confession_message.wav"  # TODO: Replace with fucking_around_response.wav
+        log_description = "fucking around response"
+    else:
+        # Fallback
+        audio_file = "post_confession_message.wav"
+        log_description = "default response"
     
     # Play the appropriate response
     if not play_and_log(audio_file, str(engine.audio_dir), engine.sensor, engine.session_id, log_description):

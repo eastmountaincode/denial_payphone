@@ -1,66 +1,46 @@
-# Sentiment Analysis Setup
+# Sentiment Analysis for Confession Classification
 
-This directory contains the sentiment classification system for confession analysis.
+This directory contains the sentiment analysis system for classifying confessions into 4 categories based on their tone and content.
+
+## Categories
+
+The system now classifies confessions into 4 distinct categories:
+
+1. **very_serious** - Deep, genuinely remorseful confessions
+   - Examples: "I hurt someone and I regret it deeply", "I have been struggling with addiction"
+
+2. **standard** - Normal everyday confessions and mistakes  
+   - Examples: "I sometimes tell white lies to avoid conflict", "I gossiped about a friend behind their back"
+
+3. **non_serious** - Light, minor infractions
+   - Examples: "I took a candy bar from my friend", "I ate the last cookie without asking"
+
+4. **fucking_around** - Dismissive, actively disregarding the confession prompt
+   - Examples: "This is dumb why are you asking me this", "I refuse to participate in this garbage"
 
 ## Files
 
-- `serious_examples.txt` - Example sentences for "serious" confessions
-- `silly_examples.txt` - Example sentences for "silly" confessions  
-- `precompute_centroids.py` - Script to compute and save centroid vectors
-- `serious_centroid.pkl` - Precomputed serious centroid (generated)
-- `silly_centroid.pkl` - Precomputed silly centroid (generated)
+- `very_serious_examples.txt` - Training examples for very serious confessions
+- `standard_examples.txt` - Training examples for standard confessions  
+- `non_serious_examples.txt` - Training examples for non-serious confessions
+- `fucking_around_examples.txt` - Training examples for dismissive responses
+- `precompute_centroids.py` - Script to generate centroid vectors for classification
+- Generated centroid files: `*_centroid.pkl` (created by precompute script)
 
-## Setup Process
+## Usage
 
-### 1. First Time Setup
-Run the precomputation script to generate centroid files:
+1. First, run the precomputation script to generate centroids:
+   ```bash
+   python util/sentiment/precompute_centroids.py
+   ```
 
-```bash
-# From the main project directory
-python util/sentiment/precompute_centroids.py
-```
+2. The main classification happens in `fsm/states/confession_analyze_sentiment.py`
 
-This will:
-- Load the fastText model
-- Process the example sentences
-- Compute average vectors (centroids) for serious and silly categories
-- Save the centroids to pickle files
+## Classification Method
 
-### 2. Adding More Examples
-To improve classification accuracy:
+The system uses fastText word embeddings to:
+1. Convert each example sentence to a vector by averaging word vectors
+2. Compute centroid vectors for each category
+3. For new input, find the category with highest cosine similarity
 
-1. Edit `serious_examples.txt` or `silly_examples.txt`
-2. Add new example sentences (one per line)
-3. Re-run the precomputation script
-
-### 3. Tuning the Threshold
-The classification threshold can be adjusted in the main state handler:
-- Located in `fsm/states/confession_analyze_sentiment.py`
-- Variable: `CLASSIFICATION_THRESHOLD = 0.02`
-- Higher values = more conservative (more "neutral" classifications)
-- Lower values = more aggressive (more "serious"/"silly" classifications)
-
-## How It Works
-
-1. **Precomputation Phase** (run once):
-   - Converts example sentences to fastText vectors
-   - Computes centroid (average) for each category
-   - Saves centroids to disk
-
-2. **Runtime Classification** (per confession):
-   - Loads precomputed centroids (fast)
-   - Converts user transcript to fastText vector
-   - Calculates cosine similarity to each centroid
-   - Uses gap score to classify: `gap = sim_serious - sim_silly`
-
-## Classification Logic
-
-```python
-gap = similarity_serious - similarity_silly
-
-if gap > +0.02:    → "serious"
-elif gap < -0.02:  → "silly"  
-else:              → "neutral"
-```
-
-The gap score and classification are logged for analysis and tuning. 
+This replaces the previous 2-category system (serious/silly) with a more nuanced 4-category approach that better captures the range of user responses. 

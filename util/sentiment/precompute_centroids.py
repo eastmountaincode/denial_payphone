@@ -18,11 +18,16 @@ import pickle
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 FASTTEXT_MODEL_PATH = "/home/denial/denial_payphone/fasttext/crawl-80d-2M-subword.bin"
 
-# File paths
-SERIOUS_EXAMPLES_FILE = os.path.join(SCRIPT_DIR, "serious_examples.txt")
-SILLY_EXAMPLES_FILE = os.path.join(SCRIPT_DIR, "silly_examples.txt")
-SERIOUS_CENTROID_FILE = os.path.join(SCRIPT_DIR, "serious_centroid.pkl")
-SILLY_CENTROID_FILE = os.path.join(SCRIPT_DIR, "silly_centroid.pkl")
+# File paths for 4 sentiment categories
+VERY_SERIOUS_EXAMPLES_FILE = os.path.join(SCRIPT_DIR, "very_serious_examples.txt")
+STANDARD_EXAMPLES_FILE = os.path.join(SCRIPT_DIR, "standard_examples.txt")
+NON_SERIOUS_EXAMPLES_FILE = os.path.join(SCRIPT_DIR, "non_serious_examples.txt")
+FUCKING_AROUND_EXAMPLES_FILE = os.path.join(SCRIPT_DIR, "fucking_around_examples.txt")
+
+VERY_SERIOUS_CENTROID_FILE = os.path.join(SCRIPT_DIR, "very_serious_centroid.pkl")
+STANDARD_CENTROID_FILE = os.path.join(SCRIPT_DIR, "standard_centroid.pkl")
+NON_SERIOUS_CENTROID_FILE = os.path.join(SCRIPT_DIR, "non_serious_centroid.pkl")
+FUCKING_AROUND_CENTROID_FILE = os.path.join(SCRIPT_DIR, "fucking_around_centroid.pkl")
 
 
 def sent_vec(text, model):
@@ -83,7 +88,7 @@ def save_centroid(centroid, filename):
 
 
 def main():
-    print("=== Sentiment Centroid Precomputation ===")
+    print("=== Sentiment Centroid Precomputation (4 Categories) ===")
     
     # Check if fastText model exists
     if not os.path.exists(FASTTEXT_MODEL_PATH):
@@ -100,24 +105,32 @@ def main():
         return 1
     
     try:
-        # Load examples
+        # Load examples for all 4 categories
         print("\n--- Loading Examples ---")
-        serious_examples = load_examples(SERIOUS_EXAMPLES_FILE)
-        silly_examples = load_examples(SILLY_EXAMPLES_FILE)
+        very_serious_examples = load_examples(VERY_SERIOUS_EXAMPLES_FILE)
+        standard_examples = load_examples(STANDARD_EXAMPLES_FILE)
+        non_serious_examples = load_examples(NON_SERIOUS_EXAMPLES_FILE)
+        fucking_around_examples = load_examples(FUCKING_AROUND_EXAMPLES_FILE)
         
-        # Compute centroids
+        # Compute centroids for all 4 categories
         print("\n--- Computing Centroids ---")
-        serious_centroid = compute_centroid(serious_examples, model)
-        silly_centroid = compute_centroid(silly_examples, model)
+        very_serious_centroid = compute_centroid(very_serious_examples, model)
+        standard_centroid = compute_centroid(standard_examples, model)
+        non_serious_centroid = compute_centroid(non_serious_examples, model)
+        fucking_around_centroid = compute_centroid(fucking_around_examples, model)
         
-        # Save centroids
+        # Save centroids for all 4 categories
         print("\n--- Saving Centroids ---")
-        save_centroid(serious_centroid, SERIOUS_CENTROID_FILE)
-        save_centroid(silly_centroid, SILLY_CENTROID_FILE)
+        save_centroid(very_serious_centroid, VERY_SERIOUS_CENTROID_FILE)
+        save_centroid(standard_centroid, STANDARD_CENTROID_FILE)
+        save_centroid(non_serious_centroid, NON_SERIOUS_CENTROID_FILE)
+        save_centroid(fucking_around_centroid, FUCKING_AROUND_CENTROID_FILE)
         
         print("\n=== Precomputation Complete ===")
-        print(f"Serious centroid: {SERIOUS_CENTROID_FILE}")
-        print(f"Silly centroid: {SILLY_CENTROID_FILE}")
+        print(f"Very serious centroid: {VERY_SERIOUS_CENTROID_FILE}")
+        print(f"Standard centroid: {STANDARD_CENTROID_FILE}")
+        print(f"Non serious centroid: {NON_SERIOUS_CENTROID_FILE}")
+        print(f"Fucking around centroid: {FUCKING_AROUND_CENTROID_FILE}")
         print("\nYou can now run the main program - centroids will be loaded from these files.")
         
         return 0
