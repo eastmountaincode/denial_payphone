@@ -10,8 +10,7 @@ from proximity import is_on_hook
 from log import log_event
 from audio import record_and_transcribe, save_audio_compressed
 import soundfile as sf
-
-MAX_SILENCE_ATTEMPTS = 2
+from config.constants import MAX_RECORDING_SILENCE_COUNT
 
 def handle_confession_record_and_transcribe(engine):
     """
@@ -28,17 +27,17 @@ def handle_confession_record_and_transcribe(engine):
     Raises:
         SessionAbort: If user hangs up or audio playback fails
     """
-    silence_attempts = 0
+    silence_count = 0
     
     # Recording and transcription loop with silence retry logic
-    while silence_attempts < MAX_SILENCE_ATTEMPTS:
+    while silence_count < MAX_RECORDING_SILENCE_COUNT:
         # Play prompt that user is about to confess
         if not play_and_log("confession_user_agreed.wav", str(engine.audio_dir), engine.sensor, engine.session_id, "user is about to confess hang-up"):
             raise engine.SessionAbort
 
         # Start simultaneous recording and transcription
         log_event(engine.session_id, "recording_and_transcribing_confession...")
-        print("FSM: Starting simultaneous recording and transcription...")
+        print("[FSM]: Starting simultaneous recording and transcription...")
         
         status, audio_np, transcript = record_and_transcribe(
             vosk_model=engine.vosk_model,
@@ -52,19 +51,19 @@ def handle_confession_record_and_transcribe(engine):
 
         # Handle silence during recording
         if status == "silence":
-            silence_attempts += 1
-            log_event(engine.session_id, "confession_no_speech_detected", f"Attempt {silence_attempts}")
-            if silence_attempts == MAX_SILENCE_ATTEMPTS:
+            silence_count += 1
+            log_event(engine.session_id, "confession_no_speech_detected", f"Attempt {silence_count}")
+            if silence_count == MAX_RECORDING_SILENCE_COUNT:
                 if not play_and_log("you_are_being_disconnected.wav", str(engine.audio_dir), engine.sensor, engine.session_id, "cnfssion slnce dscnnet"):
                     raise engine.SessionAbort
-                print("FSM: Max silence attempts reached during confession recording - ending session")
+                print("[FSM]: Max silence attempts reached during confession recording - ending session")
                 return S.END
             # On first silence, just loop and replay the prompt
-            print(f"FSM: Silence detected during confession recording, attempt {silence_attempts}/{MAX_SILENCE_ATTEMPTS}")
+            print(f"[FSM]: Silence detected during confession recording, attempt {silence_count}/{MAX_RECORDING_SILENCE_COUNT}")
             continue
 
         # status == "audio" - save the confession and transcript
-        print(f"FSM: Recording completed. Transcript length: {len(transcript)} characters")
+        print(f"[FSM]: Recording completed. Transcript: {transcript} ")
         
         # Save the audio file with compression
         confession_path = os.path.join(str(engine.session_folder), f"confession_{engine.session_id}.flac")
@@ -77,11 +76,8 @@ def handle_confession_record_and_transcribe(engine):
             f.write(transcript)
         log_event(engine.session_id, "confession_transcript_saved", transcript_path)
         
-        print(f"FSM: Files saved - Audio: {confession_path}, Transcript: {transcript_path}")
-        print(f"FSM: Transcript preview: {transcript[:100]}..." if len(transcript) > 100 else f"FSM: Full transcript: {transcript}")
-        
         break
 
     # Move to sentiment analysis state
-    print("FSM: Confession recording and transcription completed - moving to sentiment analysis")
+    print("[FSM]: Confession recording and transcription completed - moving to sentiment analysis")
     return S.CONFESSION_ANALYZE_SENTIMENT 

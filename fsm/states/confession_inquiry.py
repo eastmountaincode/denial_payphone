@@ -35,7 +35,7 @@ def handle_confession_inquiry(engine):
     # Keyword detection loop with retries
     while kw_attempts < MAX_KEYWORD_ATTEMPTS:
         kw_attempts += 1
-        keyword_result = wait_for_keyword_response(engine.sensor, engine.vosk_model, on_hook_check=lambda: is_on_hook(engine.sensor))
+        keyword_result = wait_for_keyword_response(engine.vosk_model, on_hook_check=lambda: is_on_hook(engine.sensor))
         
         if keyword_result == "on_hook":
             log_event(engine.session_id, "session_interrupted_by_on_hook", "User hung up during keyword detection.")
@@ -52,7 +52,7 @@ def handle_confession_inquiry(engine):
                 log_event(engine.session_id, "keyword_silence_detected", f"Kw Attmpt {kw_attempts}, silence count: {silence_count}")
                 if not play_and_log("you_are_being_disconnected.wav", str(engine.audio_dir), engine.sensor, engine.session_id, "silence disconnect"):
                     raise engine.SessionAbort
-                print("FSM: Max silence count reached during confession inquiry - ending session")
+                print("[FSM]: Max silence count reached during confession inquiry - ending session")
                 return S.END
             if not play_and_log("confession_kw_misunderstood.wav", str(engine.audio_dir), engine.sensor, engine.session_id, "silence occurence"):
                 raise engine.SessionAbort
@@ -70,7 +70,7 @@ def handle_confession_inquiry(engine):
         log_event(engine.session_id, "keyword_max_attempts_reached")
         if not play_and_log("you_are_being_disconnected.wav", str(engine.audio_dir), engine.sensor, engine.session_id, "keyword max attempts"):
             raise engine.SessionAbort
-        print("FSM: Max keyword attempts reached during confession inquiry - ending session")
+        print("[FSM]: Max keyword attempts reached during confession inquiry - ending session")
         return S.END
     
     # Handle user response
@@ -79,14 +79,14 @@ def handle_confession_inquiry(engine):
             raise engine.SessionAbort
         if not play_and_log("you_are_being_disconnected.wav", str(engine.audio_dir), engine.sensor, engine.session_id, "dscnnctd cnfssion dnial hangup"):
             raise engine.SessionAbort
-        print("FSM: User denied confession - ending session")
+        print("[FSM]: User denied confession - ending session")
         return S.END
     
     # keyword_result == "affirmative" - proceed to recording and transcription
     if keyword_result == "affirmative":
-        print("FSM: User agreed to confess - moving to confession recording and transcription")
+        print("[FSM]: User agreed to confess - moving to confession recording and transcription")
         return S.CONFESSION_RECORD_AND_TRANSCRIBE
     
     # Should not reach here, but safety fallback
-    print("FSM: Unexpected keyword result - ending session")
+    print("[FSM]: Unexpected keyword result - ending session")
     return S.END 

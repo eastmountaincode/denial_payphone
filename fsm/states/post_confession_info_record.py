@@ -9,8 +9,7 @@ from general_util import play_and_log
 from proximity import is_on_hook
 from log import log_event
 from audio import record_and_transcribe, save_audio_compressed
-
-MAX_SILENCE_COUNT = 2
+from config.constants import MAX_RECORDING_SILENCE_COUNT
 
 def handle_post_confession_info_record(engine):
     """
@@ -30,7 +29,7 @@ def handle_post_confession_info_record(engine):
     silence_count = 0
     
     # Info recording loop with silence retry logic
-    while silence_count < MAX_SILENCE_COUNT:
+    while silence_count < MAX_RECORDING_SILENCE_COUNT:
         # Start recording and transcribing user info
         log_event(engine.session_id, "recording_and_transcribing_user_info...")
         status, audio_np, transcript = record_and_transcribe(
@@ -47,15 +46,15 @@ def handle_post_confession_info_record(engine):
         if status == "silence":
             silence_count += 1
             log_event(engine.session_id, "info_record_silence", f"Attempt {silence_count}")
-            if silence_count == MAX_SILENCE_COUNT:
+            if silence_count == MAX_RECORDING_SILENCE_COUNT:
                 if not play_and_log("you_are_being_disconnected.wav", str(engine.audio_dir), engine.sensor, engine.session_id, "info record silence disconnect"):
                     raise engine.SessionAbort
-                print("FSM: Max silence attempts reached during info recording - ending session")
+                print("[FSM]: Max silence attempts reached during info recording - ending session")
                 return S.END
             # On silence, replay the info prompt
             if not play_and_log("info_request_affirmative_resp.wav", str(engine.audio_dir), engine.sensor, engine.session_id, "info prompt repeat"):
                 raise engine.SessionAbort
-            print(f"FSM: Silence detected during info recording, attempt {silence_count}/{MAX_SILENCE_COUNT}")
+            print(f"[FSM]: Silence detected during info recording, attempt {silence_count}/{MAX_RECORDING_SILENCE_COUNT}")
             continue  # retry
 
         # status == "audio" - save the info recording and transcript with compression
@@ -68,12 +67,9 @@ def handle_post_confession_info_record(engine):
         with open(info_transcript_path, 'w', encoding='utf-8') as f:
             f.write(transcript)
         log_event(engine.session_id, "info_transcript_saved", info_transcript_path)
-        
-        print(f"FSM: User info recorded and saved to {info_path}")
-        print(f"FSM: Info transcript saved to {info_transcript_path}")
-        print(f"FSM: Info transcript preview: {transcript[:100]}..." if len(transcript) > 100 else f"FSM: Full info transcript: {transcript}")
+
         break  # finished recording
 
     # Move to next state - ready to go inquiry
-    print("FSM: Info recording completed - moving to ready to go inquiry")
+    print("[FSM]: Info recording completed - moving to ready to go inquiry")
     return S.READY_TO_GO_INQUIRY 

@@ -35,7 +35,7 @@ def handle_post_confession_info_request(engine):
     # Keyword detection loop for info request
     while kw_attempts < MAX_KEYWORD_ATTEMPTS:
         kw_attempts += 1
-        keyword_result = wait_for_keyword_response(engine.sensor, engine.vosk_model, on_hook_check=lambda: is_on_hook(engine.sensor))
+        keyword_result = wait_for_keyword_response(engine.vosk_model, on_hook_check=lambda: is_on_hook(engine.sensor))
 
         if keyword_result == "on_hook":
             log_event(engine.session_id, "session_interrupted_by_on_hook", "User hung up during info-request keyword detection")
@@ -51,7 +51,7 @@ def handle_post_confession_info_request(engine):
             if silence_count == MAX_KEYWORD_SILENCE_COUNT:
                 if not play_and_log("you_are_being_disconnected.wav", str(engine.audio_dir), engine.sensor, engine.session_id, "info request silence disconnect"):
                     raise engine.SessionAbort
-                print("FSM: Max silence count reached during info request - ending session")
+                print("[FSM]: Max silence count reached during info request - ending session")
                 return S.END
             # First silence → replay the info-request prompt only
             if not play_and_log("post_confession_info_request.wav", str(engine.audio_dir), engine.sensor, engine.session_id, "info request repeat hangup"):
@@ -70,7 +70,7 @@ def handle_post_confession_info_request(engine):
         log_event(engine.session_id, "info_request_max_attempts_reached")
         if not play_and_log("you_are_being_disconnected.wav", str(engine.audio_dir), engine.sensor, engine.session_id, "info request max attempts"):
             raise engine.SessionAbort
-        print("FSM: Max keyword attempts reached during info request - ending session")
+        print("[FSM]: Max keyword attempts reached during info request - ending session")
         return S.END
 
     # Handle user response
@@ -79,16 +79,16 @@ def handle_post_confession_info_request(engine):
             raise engine.SessionAbort
         if not play_and_log("you_are_being_disconnected.wav", str(engine.audio_dir), engine.sensor, engine.session_id, "you are being disconnected info req hangup"):
             raise engine.SessionAbort
-        print("FSM: User declined to provide info - ending session")
+        print("[FSM]: User declined to provide info - ending session")
         return S.END
 
     # keyword_result == "affirmative" - proceed to info recording
     if keyword_result == "affirmative":
         if not play_and_log("info_request_affirmative_resp.wav", str(engine.audio_dir), engine.sensor, engine.session_id, "info request affirmative response"):
             raise engine.SessionAbort
-        print("FSM: User agreed to provide info - moving to info recording")
+        print("[FSM]: User agreed to provide info - moving to info recording")
         return S.POST_CONFESSION_INFO_RECORD
 
     # Should not reach here, but safety fallback
-    print("FSM: Unexpected keyword result in info request - ending session")
+    print("[FSM]: Unexpected keyword result in info request - ending session")
     return S.END 

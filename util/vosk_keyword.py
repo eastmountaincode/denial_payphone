@@ -6,14 +6,7 @@ import queue
 import numpy as np
 import sounddevice as sd
 from vosk import KaldiRecognizer
-from config.constants import AUDIO_DEVICE_IN_INDEX, AUDIO_IN_SAMPLE_RATE
-
-# ----------------------------------------------------------------------
-# Configuration constants
-# ----------------------------------------------------------------------
-VOSK_BLOCKSIZE       = 4800        # block size (samples)
-SILENCE_TIMEOUT_SEC  = 8           # silence before giving up (sec)
-ENERGY_THRESHOLD     = 400         # for is_silence() helper, if needed
+from config.constants import AUDIO_DEVICE_IN_INDEX, AUDIO_IN_SAMPLE_RATE, KEYWORD_SILENCE_TIMEOUT_SEC
 
 # ----------------------------------------------------------------------
 # Keyword grammar
@@ -24,15 +17,10 @@ AFFIRMATIVE_WORDS = {
 NEGATIVE_WORDS = {
     "no", "nope", "nah", "negative"
 }
-KEYWORD_GRAMMAR = json.dumps(sorted(AFFIRMATIVE_WORDS | NEGATIVE_WORDS))
-
 # ----------------------------------------------------------------------
-def _is_silence(data: bytes, threshold: int = ENERGY_THRESHOLD) -> bool:
-    """RMS-based silence test (optional, for custom logic)."""
-    audio = np.frombuffer(data, dtype=np.int16)
-    return int(np.abs(audio).mean()) < threshold
 
-def wait_for_keyword_response(sensor, vosk_model, on_hook_check=None) -> str:
+
+def wait_for_keyword_response(vosk_model, on_hook_check=None) -> str:
     """
     Listen until we hear an affirmative/negative keyword or timeout.
     Returns: "affirmative", "negative", "not_understood", "silence", "on_hook"
@@ -40,7 +28,9 @@ def wait_for_keyword_response(sensor, vosk_model, on_hook_check=None) -> str:
     rec        = KaldiRecognizer(vosk_model, AUDIO_IN_SAMPLE_RATE)
     audio_q    = queue.Queue()
     start_time = time.monotonic()
+    blocksize  = 4800
 
+    # Callback runs in separate thread, queues incoming audio data for processing
     def _callback(indata, frames, time_info, status):
         if status:
             print("SD-status:", status)
@@ -48,7 +38,7 @@ def wait_for_keyword_response(sensor, vosk_model, on_hook_check=None) -> str:
 
     with sd.RawInputStream(
         samplerate=AUDIO_IN_SAMPLE_RATE,
-        blocksize=VOSK_BLOCKSIZE,
+        blocksize=blocksize,
         dtype="int16",
         channels=1,
         device=AUDIO_DEVICE_IN_INDEX,
@@ -61,7 +51,7 @@ def wait_for_keyword_response(sensor, vosk_model, on_hook_check=None) -> str:
                 if on_hook_check and on_hook_check():
                     return "on_hook"
 
-                if (time.monotonic() - start_time) > SILENCE_TIMEOUT_SEC:
+                if (time.monotonic() - start_time) > KEYWORD_SILENCE_TIMEOUT_SEC:
                     return "silence"
  
                 if rec.AcceptWaveform(data):           # ← True ⇒ we have a full utterance
@@ -78,7 +68,5 @@ def wait_for_keyword_response(sensor, vosk_model, on_hook_check=None) -> str:
                         return "negative"
                     return "not_understood"
                
-
         finally:
             pass
-
