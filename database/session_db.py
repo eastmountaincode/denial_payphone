@@ -1,9 +1,9 @@
 import sqlite3
 import os
 from datetime import datetime
-from config.constants import ROOT_DIR
+from config.constants import DATABASE_DIR
 
-DB_PATH = os.path.join(ROOT_DIR, "sessions.db")
+DB_PATH = os.path.join(DATABASE_DIR, "sessions.db")
 
 def insert_session(session_id: str):
     """
