@@ -8,11 +8,7 @@ from general_util import play_and_log
 from proximity import is_on_hook
 from log import log_event
 from vosk_keyword import wait_for_keyword_response
-
-# Constants
-MAX_KEYWORD_ATTEMPTS = 5
-MAX_SILENCE_COUNT = 2
-
+from config.constants import MAX_KEYWORD_ATTEMPTS, MAX_KEYWORD_SILENCE_COUNT
 
 def handle_post_confession_info_request(engine):
     """
@@ -52,7 +48,7 @@ def handle_post_confession_info_request(engine):
         if keyword_result == "silence":
             silence_count += 1
             log_event(engine.session_id, "info_request_silence_detected", f"Attempt {kw_attempts}, silence {silence_count}")
-            if silence_count == MAX_SILENCE_COUNT:
+            if silence_count == MAX_KEYWORD_SILENCE_COUNT:
                 if not play_and_log("you_are_being_disconnected.wav", str(engine.audio_dir), engine.sensor, engine.session_id, "info request silence disconnect"):
                     raise engine.SessionAbort
                 print("FSM: Max silence count reached during info request - ending session")

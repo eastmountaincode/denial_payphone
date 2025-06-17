@@ -14,6 +14,13 @@ AUDIO_IN_SAMPLE_RATE = 48000      # Recording sample rate (hardware native)
 AUDIO_OUT_SAMPLE_RATE = 48000     # Playback sample rate
 AUDIO_SAVE_SAMPLE_RATE = 48000    # Saving sample rate
 
+######## Audio in constants #########
+MAX_KEYWORD_ATTEMPTS = 4
+MAX_KEYWORD_SILENCE_COUNT = 2
+
+
+
+
 
 
 

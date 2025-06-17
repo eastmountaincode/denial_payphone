@@ -50,5 +50,5 @@ def handle_pockets(engine):
         log_event(engine.session_id, "saved_transcript", response_path)
 
     # Move to confession inquiry state
-    print("FSM: Pockets state completed - moving to confession inquiry")
+    print("[FSM]: Pockets state completed - moving to confession inquiry")
     return S.CONFESSION_INQUIRY 
