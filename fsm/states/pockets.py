@@ -2,6 +2,7 @@
 
 import os
 from session_states import S
+
 import fsm.common  # Setup paths to util directory
 
 from general_util import play_and_log

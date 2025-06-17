@@ -9,7 +9,7 @@ value: optional, for "audio_recorded", the path to the saved file, for example
 '''
 def log_event(session_id: str, event: str, value: str = None) -> None:
     ts = datetime.now(timezone.utc).isoformat()
-    msg = f"[LOG]{ts} | {session_id} | {event}"
+    msg = f"[LOG] {ts} | {session_id} | {event}"
     if value is not None:
         msg += f": {value}"
     print(msg)
