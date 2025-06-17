@@ -3,11 +3,11 @@
 import os
 import numpy as np
 import pickle
+from session_states import S
 
 import fsm.common  # Setup paths to util directory
 
 from general_util import play_and_log
-from proximity import is_on_hook
 from log import log_event
 
 # Path to precomputed centroid files
