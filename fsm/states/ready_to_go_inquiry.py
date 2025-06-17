@@ -35,7 +35,7 @@ def handle_ready_to_go_inquiry(engine):
 
     # Handle on-hook during response
     if ready_keyword_result == "on_hook":
-        print("FSM: User hung up during ready to go inquiry")
+        print("[FSM] User hung up during ready to go inquiry")
         raise engine.SessionAbort
 
     # Handle affirmative response
@@ -44,7 +44,6 @@ def handle_ready_to_go_inquiry(engine):
             raise engine.SessionAbort
         if not play_and_log("you_are_being_disconnected.wav", str(engine.audio_dir), engine.sensor, engine.session_id, "final disconnect hangup"):
             raise engine.SessionAbort
-        print("FSM: User agreed to go - ending session with disconnect")
 
     # Handle negative response  
     elif ready_keyword_result == "negative":
@@ -52,7 +51,6 @@ def handle_ready_to_go_inquiry(engine):
             raise engine.SessionAbort
         if not play_and_log("you_are_being_disconnected.wav", str(engine.audio_dir), engine.sensor, engine.session_id, "final disconnect hangup"):
             raise engine.SessionAbort
-        print("FSM: User declined to go - ending session with disconnect")
 
     # Handle any other response (silence, not_understood, etc.)
     else:
@@ -60,8 +58,7 @@ def handle_ready_to_go_inquiry(engine):
             raise engine.SessionAbort
         if not play_and_log("you_are_being_disconnected.wav", str(engine.audio_dir), engine.sensor, engine.session_id, "timeout disconnect hangup"):
             raise engine.SessionAbort
-        print(f"FSM: Unexpected/timeout response '{ready_keyword_result}' - treating as decline and ending session")
 
     # All paths lead to session end
-    print("FSM: Ready to go inquiry completed - ending session")
+    print("[FSM] Ready to go inquiry completed - ending session")
     return S.END 
