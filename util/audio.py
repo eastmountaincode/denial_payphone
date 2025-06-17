@@ -74,7 +74,7 @@ def listen_for_amplitude(threshold, timeout, is_on_hook: callable, blocksize=102
 def record_and_transcribe(vosk_model,
                          threshold=0.02,
                          max_initial_silence=10.0,
-                         trailing_silence=4.0,
+                         trailing_silence=3.0,
                          on_hook_check=None):
     """
     Record audio while simultaneously transcribing with Vosk.
