@@ -6,12 +6,11 @@ import queue
 import numpy as np
 import sounddevice as sd
 from vosk import KaldiRecognizer
+from config.constants import AUDIO_DEVICE_IN_INDEX, AUDIO_IN_SAMPLE_RATE
 
 # ----------------------------------------------------------------------
 # Configuration constants
 # ----------------------------------------------------------------------
-VOSK_DEVICE          = 1           # audio-input device index
-VOSK_SR              = 48000       # sample rate (Hz)
 VOSK_BLOCKSIZE       = 4800        # block size (samples)
 SILENCE_TIMEOUT_SEC  = 8           # silence before giving up (sec)
 ENERGY_THRESHOLD     = 400         # for is_silence() helper, if needed
@@ -38,7 +37,7 @@ def wait_for_keyword_response(sensor, vosk_model, on_hook_check=None) -> str:
     Listen until we hear an affirmative/negative keyword or timeout.
     Returns: "affirmative", "negative", "not_understood", "silence", "on_hook"
     """
-    rec        = KaldiRecognizer(vosk_model, VOSK_SR)
+    rec        = KaldiRecognizer(vosk_model, AUDIO_IN_SAMPLE_RATE)
     audio_q    = queue.Queue()
     start_time = time.monotonic()
 
@@ -48,11 +47,11 @@ def wait_for_keyword_response(sensor, vosk_model, on_hook_check=None) -> str:
         audio_q.put(bytes(indata))
 
     with sd.RawInputStream(
-        samplerate=VOSK_SR,
+        samplerate=AUDIO_IN_SAMPLE_RATE,
         blocksize=VOSK_BLOCKSIZE,
         dtype="int16",
         channels=1,
-        device=VOSK_DEVICE,
+        device=AUDIO_DEVICE_IN_INDEX,
         callback=_callback,
     ):
         try:

@@ -4,23 +4,20 @@ import queue
 import json
 import sounddevice as sd
 import numpy as np
-import threading
 from vosk import KaldiRecognizer
 import time
+from config.constants import AUDIO_DEVICE_IN_INDEX, AUDIO_IN_SAMPLE_RATE
 
-VOSK_DEVICE         = 1          
-VOSK_SR             = 48000
 VOSK_BLOCKSIZE      = 4800
 MAX_SILENCE_BLOCKS = 30      # 3 seconds
 ENERGY_THRESHOLD   = 400
-
 
 def vosk_transcribe(vosk_model, max_initial_silence=6, on_hook_check=None):
     """
     Start real-time transcription with Vosk, stops after silence or on-hook.
     Returns: final transcript (str)
     """
-    rec = KaldiRecognizer(vosk_model, VOSK_SR)
+    rec = KaldiRecognizer(vosk_model, AUDIO_IN_SAMPLE_RATE)
     audio_q = queue.Queue()
     heard_speech = False
     silence_count = 0
@@ -37,11 +34,11 @@ def vosk_transcribe(vosk_model, max_initial_silence=6, on_hook_check=None):
         audio_q.put(bytes(indata))
 
     with sd.RawInputStream(
-            samplerate=VOSK_SR,
+            samplerate=AUDIO_IN_SAMPLE_RATE,
             blocksize=VOSK_BLOCKSIZE,
             dtype='int16',
             channels=1,
-            device=VOSK_DEVICE,
+            device=AUDIO_DEVICE_IN_INDEX,
             callback=cb):
         try:
             while True:

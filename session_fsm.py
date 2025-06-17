@@ -2,12 +2,18 @@
 
 from pathlib import Path
 import os
-# import soundfile as sf  # Will need this later for audio recording states
 
 from session_states import S
-from fsm.state_registry import load_state_handlers
+# Import all state handlers directly
+from fsm.states.intro import handle_intro
+from fsm.states.pockets import handle_pockets
+from fsm.states.confession_inquiry import handle_confession_inquiry
+from fsm.states.confession_record_and_transcribe import handle_confession_record_and_transcribe
+from fsm.states.confession_analyze_sentiment import handle_confession_analyze_sentiment
+from fsm.states.post_confession_info_request import handle_post_confession_info_request
+from fsm.states.post_confession_info_record import handle_post_confession_info_record
+from fsm.states.ready_to_go_inquiry import handle_ready_to_go_inquiry
 
-# In-house libraries - same imports as original run_session.py
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UTIL_DIR = os.path.join(BASE_DIR, "util")
 import sys
@@ -32,13 +38,21 @@ class SessionEngine:
         # Make SessionAbort accessible to state handlers
         self.SessionAbort = SessionAbort
 
-        # Generate session ID and create folder - direct attributes instead of SessionCtx
         #self.session_id = generate_unique_session_id(str(root))
         self.session_id = "session1234"
         self.session_folder = Path(create_session_folder(self.session_id, str(root)))
 
-        # Load state handlers dynamically from fsm/states/ directory
-        self.state_table = load_state_handlers()
+        # State table mapping 
+        self.state_table = {
+            S.INTRO: handle_intro,
+            S.POCKETS_Q: handle_pockets,
+            S.CONFESSION_INQUIRY: handle_confession_inquiry,
+            S.CONFESSION_RECORD_AND_TRANSCRIBE: handle_confession_record_and_transcribe,
+            S.CONFESSION_ANALYZE_SENTIMENT: handle_confession_analyze_sentiment,
+            S.POST_CONFESSION_INFO_REQUEST: handle_post_confession_info_request,
+            S.POST_CONFESSION_INFO_RECORD: handle_post_confession_info_record,
+            S.READY_TO_GO_INQUIRY: handle_ready_to_go_inquiry,
+        }
         print(f"FSM: Loaded {len(self.state_table)} state handlers")
 
     # -------- public entry point --------

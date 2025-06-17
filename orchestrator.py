@@ -20,17 +20,14 @@ from proximity import (
 from session_fsm import run_session
 from audio import play_audio_file
 
-ROOT_DIR = "/home/denial/denial_payphone/payphone"
-AUDIO_DIR = "/home/denial/denial_payphone/payphone/audio_files/prod_2025_06_13"
-
-VOSK_MODEL_PATH  = "/home/denial/denial_payphone/vosk/models/vosk-model-small-en-us-0.15"
-FASTTEXT_MODEL_PATH = "/home/denial/denial_payphone/fasttext/crawl-80d-2M-subword.bin"
-
+from config.constants import ROOT_DIR, AUDIO_DIR, VOSK_MODEL_PATH, FASTTEXT_MODEL_PATH
 
 class Orchestrator:
     def __init__(self):
         self.sensor = init_proximity_sensor()
+        
         self.vosk_model = Model(VOSK_MODEL_PATH)
+
         print("Loading fastText model...")
         self.fasttext_model = fasttext.load_model(FASTTEXT_MODEL_PATH)
         print("fastText model loaded successfully.")

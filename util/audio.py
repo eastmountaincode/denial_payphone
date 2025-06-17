@@ -6,16 +6,21 @@ import time
 import threading
 import queue
 from vosk_transcribe import transcription_worker
-from pydub import AudioSegment
+from config.constants import (
+    AUDIO_DEVICE_OUT_INDEX,
+    AUDIO_DEVICE_IN_INDEX,
+    AUDIO_IN_SAMPLE_RATE,
+    AUDIO_OUT_SAMPLE_RATE,
+    AUDIO_SAVE_SAMPLE_RATE,
+)
+  
 
-AUDIO_DEVICE_OUT = 1 
-AUDIO_DEVICE_IN = 1   
-SAMPLE_RATE = 48000
 
 def play_audio_file(filename, AUDIO_DIR, is_on_hook: callable = None, chunk_size=2048):
     """
     Play a .wav file in small chunks, checking is_on_hook() between each.
     Returns True if playback completed, False if interrupted (on-hook).
+    play_and_log() in general_util.py uses this function.
     """
     #time.sleep(0.75)
     if not os.path.isabs(filename):
@@ -28,11 +33,7 @@ def play_audio_file(filename, AUDIO_DIR, is_on_hook: callable = None, chunk_size
     data, samplerate = sf.read(filepath, dtype='float32')
     channels = data.shape[1] if data.ndim > 1 else 1
 
-    desired_samplerate = SAMPLE_RATE
-    if samplerate != desired_samplerate:
-        data, samplerate = resample_audio(data, samplerate, desired_samplerate)
-
-    with sd.OutputStream(samplerate=samplerate, channels=channels, device=AUDIO_DEVICE_OUT) as stream:
+    with sd.OutputStream(samplerate=AUDIO_OUT_SAMPLE_RATE, channels=channels, device=AUDIO_DEVICE_OUT_INDEX) as stream:
         start = 0
         while start < len(data):
             end = min(start + chunk_size, len(data))
@@ -52,11 +53,11 @@ def listen_for_amplitude(threshold, timeout, is_on_hook: callable, blocksize=102
     start_time = time.time()
 
     stream_args = {
-        'samplerate': SAMPLE_RATE,
+        'samplerate': AUDIO_IN_SAMPLE_RATE,
         'channels': 1,
         'dtype': 'float32',
         'blocksize': blocksize,
-        'device': AUDIO_DEVICE_IN
+        'device': AUDIO_DEVICE_IN_INDEX
     }
 
     with sd.InputStream(**stream_args) as stream:
@@ -70,38 +71,10 @@ def listen_for_amplitude(threshold, timeout, is_on_hook: callable, blocksize=102
             if is_on_hook():
                 return None
 
-def resample_audio(data, orig_sr, target_sr):
-    """
-    Resample numpy audio array from orig_sr to target_sr. Returns float32 array.
-    Handles mono or multi-channel.
-    """
-    if orig_sr == target_sr:
-        return data, orig_sr
-    ratio = target_sr / orig_sr
-    num_samples = int(len(data) * ratio)
-    if data.ndim == 1:
-        resampled = np.interp(
-            np.linspace(0, len(data), num_samples, endpoint=False),
-            np.arange(len(data)),
-            data
-        )
-    else:
-        # Multi-channel: resample each channel separately
-        resampled = np.vstack([
-            np.interp(
-                np.linspace(0, len(data), num_samples, endpoint=False),
-                np.arange(len(data)),
-                data[:, ch]
-            ) for ch in range(data.shape[1])
-        ]).T
-    return resampled.astype('float32'), target_sr
-
 def record_and_transcribe(vosk_model,
-                         threshold=0.015,
+                         threshold=0.02,
                          max_initial_silence=10.0,
-                         trailing_silence=4.5,
-                         sr=48000,
-                         device_index=1,
+                         trailing_silence=4.0,
                          on_hook_check=None):
     """
     Record audio while simultaneously transcribing with Vosk.
@@ -115,7 +88,7 @@ def record_and_transcribe(vosk_model,
     """
     # Recording parameters
     block_dur = 0.18  # 180 ms blocks
-    block_size = int(sr * block_dur)
+    block_size = int(AUDIO_IN_SAMPLE_RATE * block_dur)
     max_init_blocks = int(max_initial_silence / block_dur)
     trailing_blocks = int(trailing_silence / block_dur)
     
@@ -135,15 +108,15 @@ def record_and_transcribe(vosk_model,
     # Start transcription worker thread
     transcription_thread = threading.Thread(
         target=transcription_worker, 
-        args=(vosk_model, sr, audio_queue, transcript_parts, transcript_lock, stop_transcription, speech_detected_by_vosk, last_word_time),
+        args=(vosk_model, AUDIO_IN_SAMPLE_RATE, audio_queue, transcript_parts, transcript_lock, stop_transcription, speech_detected_by_vosk, last_word_time),
         daemon=True
     )
     transcription_thread.start()
 
     with sd.InputStream(channels=1,
-                        samplerate=sr,
+                        samplerate=AUDIO_IN_SAMPLE_RATE,
                         blocksize=block_size,
-                        device=device_index,
+                        device=AUDIO_DEVICE_IN_INDEX,
                         dtype='float32') as stream:
         while True:
             if on_hook_check and on_hook_check():
@@ -220,50 +193,17 @@ def record_and_transcribe(vosk_model,
     return "audio", audio_np, full_transcript
 
 
-def save_audio_compressed(audio_np, sr, output_path):
+def save_audio_compressed(audio_np, output_path):
     """
-    Save audio with 16-bit FLAC compression and measure timing.
+    Save audio with 16-bit FLAC compression.
     
     Args:
         audio_np: numpy audio array (float32)
         sr: sample rate
         output_path: path for output file (should end with .flac)
-    
-    Returns:
-        dict with timing and size info
     """
-    start_time = time.time()
-    
-    # Step 1: Convert to int16 for size reduction
+    # Convert to int16 and save as FLAC
     audio_int16 = (np.clip(audio_np, -1.0, 1.0) * 32767).astype(np.int16)
-    int16_time = time.time()
-    
-    # Step 2: Create temporary uncompressed WAV file for size comparison
-    temp_wav_path = output_path.replace('.flac', '_temp.wav')
-    sf.write(temp_wav_path, audio_int16, sr, subtype='PCM_16')
-    wav_time = time.time()
-    
-    # Step 3: Save directly as FLAC (much faster than MP3)
-    sf.write(output_path, audio_int16, sr, subtype='PCM_16', format='FLAC')
-    flac_time = time.time()
-    
-    # Step 4: Clean up temp file and get sizes
-    temp_size = os.path.getsize(temp_wav_path)
-    os.remove(temp_wav_path)
-    final_size = os.path.getsize(output_path)
-    
-    end_time = time.time()
-    
-    # Return timing and compression info
-    return {
-        'total_time': end_time - start_time,
-        'int16_conversion_time': int16_time - start_time,
-        'wav_write_time': wav_time - int16_time,
-        'flac_conversion_time': flac_time - wav_time,
-        'temp_size_bytes': temp_size,
-        'final_size_bytes': final_size,
-        'compression_ratio': temp_size / final_size,
-        'size_reduction_percent': (1 - final_size / temp_size) * 100
-    }
+    sf.write(output_path, audio_int16, AUDIO_SAVE_SAMPLE_RATE, subtype='PCM_16', format='FLAC')
 
 

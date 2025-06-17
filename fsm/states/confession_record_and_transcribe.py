@@ -11,10 +11,7 @@ from log import log_event
 from audio import record_and_transcribe, save_audio_compressed
 import soundfile as sf
 
-# Constants from original code
-VOSK_SR = 48000  # Sample rate for audio recording
 MAX_SILENCE_ATTEMPTS = 2
-
 
 def handle_confession_record_and_transcribe(engine):
     """
@@ -45,7 +42,6 @@ def handle_confession_record_and_transcribe(engine):
         
         status, audio_np, transcript = record_and_transcribe(
             vosk_model=engine.vosk_model,
-            threshold=0.05,
             on_hook_check=lambda: is_on_hook(engine.sensor)
         )
 
@@ -72,18 +68,8 @@ def handle_confession_record_and_transcribe(engine):
         
         # Save the audio file with compression
         confession_path = os.path.join(str(engine.session_folder), f"confession_{engine.session_id}.flac")
-        compression_info = save_audio_compressed(audio_np, VOSK_SR, confession_path)
-        
-        # Log compression results
+        save_audio_compressed(audio_np, confession_path)
         log_event(engine.session_id, "confession_audio_saved", confession_path)
-        log_event(engine.session_id, "compression_timing", {
-            "total_time": f"{compression_info['total_time']:.3f}s",
-            "flac_conversion_time": f"{compression_info['flac_conversion_time']:.3f}s", 
-            "size_reduction": f"{compression_info['size_reduction_percent']:.1f}%",
-            "original_size_mb": f"{compression_info['temp_size_bytes'] / 1024 / 1024:.1f}MB",
-            "compressed_size_mb": f"{compression_info['final_size_bytes'] / 1024 / 1024:.1f}MB"
-        })
-        print(f"[COMPRESSION]: Total time: {compression_info['total_time']:.3f}s, Size reduction: {compression_info['size_reduction_percent']:.1f}%")
         
         # Save the transcript
         transcript_path = os.path.join(str(engine.session_folder), f"confession_transcript_{engine.session_id}.txt")

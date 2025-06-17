@@ -10,14 +10,12 @@ from proximity import is_on_hook
 from log import log_event
 from audio import record_and_transcribe, save_audio_compressed
 
-# Constants from original code
-VOSK_SR = 48000  # Sample rate for audio recording
 MAX_SILENCE_COUNT = 2
-
 
 def handle_post_confession_info_record(engine):
     """
-    Handle the post confession info recording state - record additional user information.
+    Handle the post confession info recording state - record
+      additional user information like email or instagram handle.
     
     Args:
         engine: SessionEngine instance with sensor, audio_dir, session_id, session_folder, etc.
@@ -62,18 +60,8 @@ def handle_post_confession_info_record(engine):
 
         # status == "audio" - save the info recording and transcript with compression
         info_path = os.path.join(str(engine.session_folder), f"info_{engine.session_id}.flac")
-        compression_info = save_audio_compressed(audio_np, VOSK_SR, info_path)
-        
-        # Log compression results
+        save_audio_compressed(audio_np, info_path)
         log_event(engine.session_id, "info_audio_saved", info_path)
-        log_event(engine.session_id, "info_compression_timing", {
-            "total_time": f"{compression_info['total_time']:.3f}s",
-            "flac_conversion_time": f"{compression_info['flac_conversion_time']:.3f}s",
-            "size_reduction": f"{compression_info['size_reduction_percent']:.1f}%",
-            "original_size_mb": f"{compression_info['temp_size_bytes'] / 1024 / 1024:.1f}MB",
-            "compressed_size_mb": f"{compression_info['final_size_bytes'] / 1024 / 1024:.1f}MB"
-        })
-        print(f"[INFO COMPRESSION]: Total time: {compression_info['total_time']:.3f}s, Size reduction: {compression_info['size_reduction_percent']:.1f}%")
         
         # Save the transcript
         info_transcript_path = os.path.join(str(engine.session_folder), f"info_transcript_{engine.session_id}.txt")
