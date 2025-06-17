@@ -3,7 +3,7 @@ import pickle
 import numpy as np
 from itertools import combinations
 
-THRESHOLD = 0.15  # Minimum cosine distance you consider "well-separated"
+SEMANTIC_THRESHOLD = 0.15  # Minimum cosine distance you consider "well-separated"
 
 def load_centroid(filename):
     with open(filename, 'rb') as f:
@@ -16,14 +16,14 @@ def cosine_distance(a, b):
 centroid_files = [f for f in os.listdir('.') if f.endswith('_centroid.pkl')]
 centroids = {fname: load_centroid(fname) for fname in centroid_files}
 
-print(f"Comparing centroids (threshold = {THRESHOLD}):\n")
+print(f"Comparing centroids (threshold = {SEMANTIC_THRESHOLD}):\n")
 
 too_close = []
 for (name1, vec1), (name2, vec2) in combinations(centroids.items(), 2):
     cos_dist = cosine_distance(vec1, vec2)
-    flag = "OK" if cos_dist >= THRESHOLD else "TOO CLOSE"
+    flag = "OK" if cos_dist >= SEMANTIC_THRESHOLD else "TOO CLOSE"
     print(f"{name1} <-> {name2}:  cosine distance = {cos_dist:.4f}  [{flag}]")
-    if cos_dist < THRESHOLD:
+    if cos_dist < SEMANTIC_THRESHOLD:
         too_close.append((name1, name2, cos_dist))
 
 if too_close:

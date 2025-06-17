@@ -1,15 +1,14 @@
 import os
 from datetime import datetime, timezone
-
-SESSIONS_ROOT = "/home/denial/denial_payphone/payphone/sessions"
+from config.constants import SESSIONS_ROOT
 
 '''
 event: the main action or step - "audio_recorded"
-value: optional, for "audio_recorded", the path to the saved file, for example
+value: optional, for "audio_recorded", it might be the path to the saved file, for example
 '''
 def log_event(session_id: str, event: str, value: str = None, verbose: bool = True) -> None:
-    ts = datetime.now(timezone.utc).isoformat()
-    msg = f"[LOG] {ts} | {session_id} | {event}"
+    timestamp = datetime.now(timezone.utc).isoformat()
+    msg = f"[LOG] {timestamp} | {session_id} | {event}"
     if value is not None:
         msg += f": {value}"
     if verbose:

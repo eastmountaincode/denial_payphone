@@ -16,7 +16,7 @@ from config.constants import (
   
 
 
-def play_audio_file(filename, AUDIO_DIR, is_on_hook: callable = None, chunk_size=2048):
+def play_audio_file(filename, AUDIO_DIR, is_on_hook: callable = None):
     """
     Play a .wav file in small chunks, checking is_on_hook() between each.
     Returns True if playback completed, False if interrupted (on-hook).
@@ -30,9 +30,10 @@ def play_audio_file(filename, AUDIO_DIR, is_on_hook: callable = None, chunk_size
     if not os.path.exists(filepath):
         raise FileNotFoundError(f"Audio file not found: {filepath}")
 
-    data, samplerate = sf.read(filepath, dtype='float32')
+    data, _ = sf.read(filepath, dtype='float32')
     channels = data.shape[1] if data.ndim > 1 else 1
 
+    chunk_size = 24000  # ~0.5s at 48kHz - checks for hang-up every half second
     with sd.OutputStream(samplerate=AUDIO_OUT_SAMPLE_RATE, channels=channels, device=AUDIO_DEVICE_OUT_INDEX) as stream:
         start = 0
         while start < len(data):

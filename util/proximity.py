@@ -1,12 +1,7 @@
 import time
 import board
 import adafruit_vcnl4200
-
-# ---- Constants ----
-PROXIMITY_THRESHOLD = 200       # >= this is ON HOOK; < this is OFF HOOK
-OFF_HOOK_REQUIRED_DURATION = 2.0  # seconds proximity must stay low to count as off-hook
-ON_HOOK_REQUIRED_DURATION = 2.0   # seconds proximity must stay high to count as on-hook
-POLL_INTERVAL = 0.1               # seconds between sensor polls
+from config.constants import PROXIMITY_THRESHOLD, OFF_HOOK_REQUIRED_DURATION, ON_HOOK_REQUIRED_DURATION, POLL_INTERVAL
 
 def init_proximity_sensor():
     """
