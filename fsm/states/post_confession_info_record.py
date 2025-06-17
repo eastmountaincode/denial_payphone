@@ -1,7 +1,5 @@
 # fsm/states/post_confession_info_record.py
 
-import os
-from session_states import S
 import fsm.common  # Setup paths to util directory
 
 from general_util import play_and_log
@@ -61,14 +59,14 @@ def handle_post_confession_info_record(engine):
             continue  # retry
 
         # status == "audio" - save the info recording and transcript with compression
-        info_path = os.path.join(str(engine.session_folder), f"info_{engine.session_id}.mp3")
+        info_path = os.path.join(str(engine.session_folder), f"info_{engine.session_id}.flac")
         compression_info = save_audio_compressed(audio_np, VOSK_SR, info_path)
         
         # Log compression results
         log_event(engine.session_id, "info_audio_saved", info_path)
         log_event(engine.session_id, "info_compression_timing", {
             "total_time": f"{compression_info['total_time']:.3f}s",
-            "mp3_conversion_time": f"{compression_info['mp3_conversion_time']:.3f}s",
+            "flac_conversion_time": f"{compression_info['flac_conversion_time']:.3f}s",
             "size_reduction": f"{compression_info['size_reduction_percent']:.1f}%",
             "original_size_mb": f"{compression_info['temp_size_bytes'] / 1024 / 1024:.1f}MB",
             "compressed_size_mb": f"{compression_info['final_size_bytes'] / 1024 / 1024:.1f}MB"

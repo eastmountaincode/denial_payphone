@@ -220,15 +220,15 @@ def record_and_transcribe(vosk_model,
     return "audio", audio_np, full_transcript
 
 
-def save_audio_compressed(audio_np, sr, output_path, bitrate="128k"):
+def save_audio_compressed(audio_np, sr, output_path, compression_level=5):
     """
-    Save audio with 16-bit + MP3 compression and measure timing.
+    Save audio with 16-bit FLAC compression and measure timing.
     
     Args:
         audio_np: numpy audio array (float32)
         sr: sample rate
-        output_path: path for output file (should end with .mp3)
-        bitrate: MP3 bitrate (default 128k for good quality/size balance)
+        output_path: path for output file (should end with .flac)
+        compression_level: FLAC compression level 0-8 (default 5 for good speed/size balance)
     
     Returns:
         dict with timing and size info
@@ -239,15 +239,14 @@ def save_audio_compressed(audio_np, sr, output_path, bitrate="128k"):
     audio_int16 = (np.clip(audio_np, -1.0, 1.0) * 32767).astype(np.int16)
     int16_time = time.time()
     
-    # Step 2: Create temporary WAV file (in memory would be better but this is simpler)
-    temp_wav_path = output_path.replace('.mp3', '_temp.wav')
+    # Step 2: Create temporary uncompressed WAV file for size comparison
+    temp_wav_path = output_path.replace('.flac', '_temp.wav')
     sf.write(temp_wav_path, audio_int16, sr, subtype='PCM_16')
     wav_time = time.time()
     
-    # Step 3: Convert WAV to MP3 using pydub
-    audio_segment = AudioSegment.from_wav(temp_wav_path)
-    audio_segment.export(output_path, format="mp3", bitrate=bitrate)
-    mp3_time = time.time()
+    # Step 3: Save directly as FLAC (much faster than MP3)
+    sf.write(output_path, audio_int16, sr, subtype='PCM_16', format='FLAC', compression=compression_level)
+    flac_time = time.time()
     
     # Step 4: Clean up temp file and get sizes
     temp_size = os.path.getsize(temp_wav_path)
@@ -261,7 +260,7 @@ def save_audio_compressed(audio_np, sr, output_path, bitrate="128k"):
         'total_time': end_time - start_time,
         'int16_conversion_time': int16_time - start_time,
         'wav_write_time': wav_time - int16_time,
-        'mp3_conversion_time': mp3_time - wav_time,
+        'flac_conversion_time': flac_time - wav_time,
         'temp_size_bytes': temp_size,
         'final_size_bytes': final_size,
         'compression_ratio': temp_size / final_size,
