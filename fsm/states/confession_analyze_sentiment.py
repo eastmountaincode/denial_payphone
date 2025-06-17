@@ -150,28 +150,24 @@ def handle_confession_analyze_sentiment(engine):
     
     if not os.path.exists(transcript_path):
         log_event(engine.session_id, "sentiment_analysis_error", "Transcript file not found")
-        print("FSM: Warning - No transcript file found, using empty transcript")
+        print("[FSM]: Warning - No transcript file found, using empty transcript")
         transcript = ""
     else:
         with open(transcript_path, 'r', encoding='utf-8') as f:
             transcript = f.read().strip()
-        print(f"FSM: Loaded transcript for sentiment analysis: '{transcript[:100]}{'...' if len(transcript) > 100 else ''}'")
+        print(f"[FSM]: Loaded transcript for sentiment analysis: '{transcript[:100]}{'...' if len(transcript) > 100 else ''}'")
     
     # Perform sentiment classification
     log_event(engine.session_id, "sentiment_analysis_start")
-    print("FSM: Analyzing confession sentiment with fastText (4 categories)...")
     
     classification, similarities = classify_sentiment(transcript, engine.fasttext_model)
     
     # Log the results
     log_event(engine.session_id, "confession_classified", {
-        "classification": classification,
-        "similarities": similarities,
-        "transcript_length": len(transcript)
+        "classification": classification
     })
     
-    print(f"FSM: Sentiment classification: {classification}")
-    print(f"FSM: Similarities: {similarities}")
+    print(f"[FSM]: Sentiment classification: {classification}")
     
     # Determine which audio file to play based on classification
     if classification == "very_serious":
@@ -195,5 +191,5 @@ def handle_confession_analyze_sentiment(engine):
     if not play_and_log(audio_file, str(engine.audio_dir), engine.sensor, engine.session_id, log_description):
         raise engine.SessionAbort
     
-    print(f"FSM: Played {classification} response - moving to post confession info request")
+    print(f"[FSM] Played {classification} response - moving to post confession info request")
     return S.POST_CONFESSION_INFO_REQUEST 

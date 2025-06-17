@@ -28,7 +28,6 @@ def handle_ready_to_go_inquiry(engine):
 
     # Listen for yes/no/timeout after the prompt (single attempt, no retries)
     ready_keyword_result = wait_for_keyword_response(
-        engine.sensor,
         engine.vosk_model,
         on_hook_check=lambda: is_on_hook(engine.sensor)
     )
