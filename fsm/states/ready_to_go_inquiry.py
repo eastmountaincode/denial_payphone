@@ -1,14 +1,11 @@
 # fsm/states/ready_to_go_inquiry.py
 
-import os
-import sys
 from session_states import S
 
 import fsm.common  # Setup paths to util directory
 
 from general_util import play_and_log
 from proximity import is_on_hook
-from log import log_event
 from vosk_keyword import wait_for_keyword_response
 
 

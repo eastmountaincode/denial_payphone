@@ -9,7 +9,6 @@ from general_util import play_and_log
 from proximity import is_on_hook
 from log import log_event
 from audio import record_and_transcribe, save_audio_compressed
-import soundfile as sf
 
 # Constants from original code
 VOSK_SR = 48000  # Sample rate for audio recording
