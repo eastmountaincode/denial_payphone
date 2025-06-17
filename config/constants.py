@@ -2,6 +2,7 @@
 ROOT_DIR = "/home/denial/denial_payphone/payphone"
 AUDIO_DIR = "/home/denial/denial_payphone/payphone/audio_files/prod_2025_06_13"
 SESSIONS_ROOT = "/home/denial/denial_payphone/payphone/sessions"
+DATABASE_DIR = "/home/denial/denial_payphone/payphone/database"
 
 ######## Model paths #########
 VOSK_MODEL_PATH  = "/home/denial/denial_payphone/vosk/models/vosk-model-small-en-us-0.15"

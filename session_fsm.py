@@ -22,6 +22,7 @@ if UTIL_DIR not in sys.path:
 
 from log import log_event
 from general_util import create_session_folder, generate_unique_session_id
+from session_db import insert_session
 
 class SessionAbort(Exception):
     """Raised for on-hook or unrecoverable errors."""
@@ -60,6 +61,7 @@ class SessionEngine:
     def run(self):
         """Main FSM execution loop"""
         log_event(self.session_id, "session_start", str(self.session_folder))
+        insert_session(self.session_id)
         
         # Set the initial state to INTRO
         state = S.INTRO
