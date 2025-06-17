@@ -7,12 +7,13 @@ SESSIONS_ROOT = "/home/denial/denial_payphone/payphone/sessions"
 event: the main action or step - "audio_recorded"
 value: optional, for "audio_recorded", the path to the saved file, for example
 '''
-def log_event(session_id: str, event: str, value: str = None) -> None:
+def log_event(session_id: str, event: str, value: str = None, verbose: bool = True) -> None:
     ts = datetime.now(timezone.utc).isoformat()
     msg = f"[LOG] {ts} | {session_id} | {event}"
     if value is not None:
         msg += f": {value}"
-    print(msg)
+    if verbose:
+        print(msg)
     try:
         session_folder = os.path.join(SESSIONS_ROOT, session_id)
         os.makedirs(session_folder, exist_ok=True)

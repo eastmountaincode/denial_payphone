@@ -32,7 +32,6 @@ def handle_pockets(engine):
     log_event(engine.session_id, "starting_transcription_1")
     transcript = vosk_transcribe(engine.vosk_model, on_hook_check=lambda: is_on_hook(engine.sensor))
     log_event(engine.session_id, "transcription_result", transcript)
-    print(f"FSM: Transcribed pockets response: '{transcript}'")
 
     # Handle empty vs non-empty responses
     if not transcript.strip():
@@ -44,7 +43,7 @@ def handle_pockets(engine):
         if not play_and_log("pockets_user_responded.wav", str(engine.audio_dir), engine.sensor, engine.session_id, "pockets response message"):
             raise engine.SessionAbort
         
-        # Save transcript to file (no need to store in memory since we don't use it later)
+        # Save transcript to file
         response_path = os.path.join(str(engine.session_folder), "pockets_transcript.txt")
         with open(response_path, "w") as f:
             f.write(transcript.strip())

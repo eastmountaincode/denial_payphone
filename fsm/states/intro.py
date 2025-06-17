@@ -31,7 +31,7 @@ def handle_intro(engine):
     if not play_and_log("intro_prompt.wav", str(engine.audio_dir), engine.sensor, engine.session_id, "intro prompt hangup"):
         raise engine.SessionAbort
     
-    # Listen for user to say something (matching original logic)
+    # Listen for user to say something
     heard = listen_for_amplitude(
         threshold=0.05,
         timeout=6, 
@@ -46,14 +46,14 @@ def handle_intro(engine):
     # Play appropriate response based on whether user spoke
     if heard:
         log_event(engine.session_id, "amplitude_detected_after_intro")
-        wav = "post_intro_user_did_speak.wav"
+        resp = "post_intro_user_did_speak.wav"
     else:
         log_event(engine.session_id, "no_amplitude_detected_after_intro")
-        wav = "post_intro_user_did_not_speak.wav"
+        resp = "post_intro_user_did_not_speak.wav"
     
-    if not play_and_log(wav, str(engine.audio_dir), engine.sensor, engine.session_id, "intro response hangup"):
+    if not play_and_log(resp, str(engine.audio_dir), engine.sensor, engine.session_id, "intro response hangup"):
         raise engine.SessionAbort
     
     # Transition to pockets question state
-    print("FSM: Intro state completed - moving to pockets question")
+    print("[FSM]: Intro state completed - moving to pockets question")
     return S.POCKETS_Q 

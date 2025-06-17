@@ -62,7 +62,7 @@ class SessionEngine:
         log_event(self.session_id, "session_start", str(self.session_folder))
         
         # Set the initial state to INTRO
-        state = S.CONFESSION_RECORD_AND_TRANSCRIBE
+        state = S.INTRO
 
         # Each iteration executes the handler for the current state,
         # which may block (e.g., waiting for user input), and then returns the next state.
@@ -79,22 +79,44 @@ class SessionEngine:
                 print(f"FSM: Transitioning to state {state.name if state != S.END else 'END'}")
             except SessionAbort:
                 log_event(self.session_id, "session_aborted")
-                print("FSM: Session aborted")
                 state = S.END
             except Exception as e:
                 log_event(self.session_id, "session_error", str(e))
-                print(f"FSM: Session error: {e}")
                 state = S.END
         
         log_event(self.session_id, "session_end")
-        print("FSM: Session ended")
 
 
-# -------- Drop-in replacement function for orchestrator --------
 def run_session(sensor, ROOT_DIR, AUDIO_DIR, vosk_model, fasttext_model):
     """
-    Drop-in replacement for the original run_session function.
-    This allows the orchestrator to remain unchanged.
+    Initialize and execute a complete payphone confession session using a finite state machine.
+    
+    This is the main entry point for payphone sessions, called when a user picks up the phone
+    (goes off-hook).
+    
+    Args:
+        sensor: Proximity sensor object for detecting phone on/off-hook status
+        ROOT_DIR (str): Root directory path for session data storage and file operations
+        AUDIO_DIR (str): Directory containing audio prompt files
+        vosk_model: Pre-loaded Vosk speech recognition model for real-time transcription
+        fasttext_model: Pre-loaded fastText model for sentiment analysis of confessions
+    
+    Returns:
+        None: Function handles session completion internally and logs results
+    
+    Raises:
+        Exception: Catches and logs any unhandled exceptions during session execution
+        
+    Side Effects:
+        - Creates a unique session folder under ROOT_DIR/sessions/
+        - Records and saves audio files (confession, user info) as compressed FLAC
+        - Saves transcription text files for all recorded audio
+        - May terminate early if user hangs up (detected via proximity sensor)
+        
+    Note:
+        This function is designed to be called from the orchestrator loop after off-hook
+        detection. All audio I/O operations include on-hook monitoring for graceful
+        session termination if the user hangs up mid-session.
     """
     try:
         engine = SessionEngine(sensor, ROOT_DIR, AUDIO_DIR, vosk_model, fasttext_model)
