@@ -17,9 +17,6 @@ STANDARD_CENTROID_FILE = os.path.join(SENTIMENT_DIR, "standard_centroid.pkl")
 NON_SERIOUS_CENTROID_FILE = os.path.join(SENTIMENT_DIR, "non_serious_centroid.pkl")
 FUCKING_AROUND_CENTROID_FILE = os.path.join(SENTIMENT_DIR, "fucking_around_centroid.pkl")
 
-# Threshold for classification
-CLASSIFICATION_THRESHOLD = 0.02
-
 # Cached centroids (loaded once)
 _very_serious_centroid = None
 _standard_centroid = None
