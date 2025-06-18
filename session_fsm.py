@@ -42,8 +42,8 @@ class SessionEngine:
         # Make SessionAbort accessible to state handlers
         self.SessionAbort = SessionAbort
 
-        #self.session_id = generate_unique_session_id(str(root))
-        self.session_id = "session1234"
+        self.session_id = generate_unique_session_id(str(root))
+        #self.session_id = "session1234"
         self.session_folder = Path(create_session_folder(self.session_id, str(root)))
 
         # State table mapping 
