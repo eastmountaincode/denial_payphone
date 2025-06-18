@@ -69,7 +69,6 @@ def load_precomputed_centroids():
     
     if (_very_serious_centroid is None or _standard_centroid is None or 
         _non_serious_centroid is None or _fucking_around_centroid is None):
-        print("Loading precomputed sentiment centroids for 4 categories...")
         
         # Check if centroid files exist
         centroid_files = [
@@ -95,10 +94,6 @@ def load_precomputed_centroids():
             
         with open(FUCKING_AROUND_CENTROID_FILE, 'rb') as f:
             _fucking_around_centroid = pickle.load(f)
-        
-        print(f"Loaded centroids - Very serious: {_very_serious_centroid.shape}, "
-              f"Standard: {_standard_centroid.shape}, Non serious: {_non_serious_centroid.shape}, "
-              f"Fucking around: {_fucking_around_centroid.shape}")
     
     return _very_serious_centroid, _standard_centroid, _non_serious_centroid, _fucking_around_centroid
 
@@ -150,7 +145,7 @@ def handle_confession_analyze_sentiment(engine):
     
     if not os.path.exists(transcript_path):
         log_event(engine.session_id, "sentiment_analysis_error", "Transcript file not found")
-        print("[FSM]: Warning - No transcript file found, using empty transcript")
+        print("[FSM] Warning - No transcript file found, using empty transcript")
         transcript = ""
     else:
         with open(transcript_path, 'r', encoding='utf-8') as f:
