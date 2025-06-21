@@ -20,14 +20,14 @@ AUDIO_SAVE_SAMPLE_RATE = 48000    # Saving sample rate
 
 ######## Audio in constants #########
 MAX_KEYWORD_ATTEMPTS = 4
-MAX_KEYWORD_SILENCE_COUNT = 2
-MAX_RECORDING_SILENCE_COUNT = 2
-KEYWORD_SILENCE_TIMEOUT_SEC = 8
+MAX_KEYWORD_SILENCE_COUNT = 3
+MAX_RECORDING_SILENCE_COUNT = 3
+KEYWORD_SILENCE_TIMEOUT_SEC = 10
 
 ######## Proximity sensor constants #########
-PROXIMITY_THRESHOLD = 200       # >= this is ON HOOK; < this is OFF HOOK
-OFF_HOOK_REQUIRED_DURATION = 2.0  # seconds proximity must stay low to count as off-hook
-ON_HOOK_REQUIRED_DURATION = 2.0   # seconds proximity must stay high to count as on-hook
+PROXIMITY_THRESHOLD = 30       # >= this is ON HOOK; < this is OFF HOOK
+OFF_HOOK_REQUIRED_DURATION = 3.0  # seconds proximity must stay low to count as off-hook
+ON_HOOK_REQUIRED_DURATION = 3.0   # seconds proximity must stay high to count as on-hook
 POLL_INTERVAL = 0.1               # seconds between sensor polls
 
 

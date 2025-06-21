@@ -22,7 +22,6 @@ def play_audio_file(filename, AUDIO_DIR, is_on_hook: callable = None):
     Returns True if playback completed, False if interrupted (on-hook).
     play_and_log() in general_util.py uses this function.
     """
-    #time.sleep(0.75)
     if not os.path.isabs(filename):
         filepath = os.path.join(AUDIO_DIR, filename)
     else:
@@ -75,8 +74,8 @@ def listen_for_amplitude(threshold, timeout, is_on_hook: callable):
 
 def record_and_transcribe(vosk_model,
                          threshold=0.02,
-                         max_initial_silence=10.0,
-                         trailing_silence=3.0,
+                         max_initial_silence=13.0,
+                         trailing_silence=3.5,
                          on_hook_check=None):
     """
     Record audio while simultaneously transcribing with Vosk.
