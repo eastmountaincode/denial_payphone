@@ -21,7 +21,7 @@ CLASSIFICATION_THRESHOLD = 0.5
 
 # Minimum margin required between highest and second-highest similarity
 # If margin is smaller, classify as "standard" to avoid ambiguous classifications
-CLASSIFICATION_MARGIN = 0.2
+CLASSIFICATION_MARGIN = 0.15
 
 # Cached centroids (loaded once)
 _serious_centroid = None
