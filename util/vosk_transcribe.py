@@ -10,9 +10,9 @@ from config.constants import AUDIO_DEVICE_IN_INDEX, AUDIO_IN_SAMPLE_RATE
 
 VOSK_BLOCKSIZE      = 4800
 MAX_SILENCE_BLOCKS = 30      # 3 seconds
-ENERGY_THRESHOLD   = 400
+ENERGY_THRESHOLD   = 350
 
-def vosk_transcribe(vosk_model, max_initial_silence=6, on_hook_check=None):
+def vosk_transcribe(vosk_model, max_initial_silence=10, on_hook_check=None):
     """
     Start real-time transcription with Vosk, stops after silence or on-hook.
     Returns: final transcript (str)
