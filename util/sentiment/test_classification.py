@@ -23,7 +23,7 @@ sys.path.insert(0, BASE_DIR)
 FASTTEXT_MODEL_PATH = "/home/denial/denial_payphone/fasttext/crawl-80d-2M-subword.bin"
 
 # Import from the actual FSM state module
-from fsm.states.confession_analyze_sentiment import classify_sentiment, CLASSIFICATION_THRESHOLD
+from fsm.states.confession_analyze_sentiment import classify_sentiment, CLASSIFICATION_THRESHOLD, CLASSIFICATION_MARGIN
 
 def test_samples():
     """Test a variety of sample confessions"""
@@ -65,7 +65,7 @@ def test_samples():
         ("I forgot to call my mom back", "standard"),
     ]
     
-    print(f"\n=== Testing Classification (threshold = {CLASSIFICATION_THRESHOLD}) ===\n")
+    print(f"\n=== Testing Classification (threshold = {CLASSIFICATION_THRESHOLD}, margin = {CLASSIFICATION_MARGIN}) ===\n")
     
     correct = 0
     total = len(test_confessions)
@@ -73,6 +73,13 @@ def test_samples():
     for confession, expected in test_confessions:
         try:
             classification, similarities = classify_sentiment(confession, model)
+            
+            # Calculate margin for display
+            trainable_sims = {k: v for k, v in similarities.items() if k != "standard"}
+            sorted_sims = sorted(trainable_sims.items(), key=lambda x: x[1], reverse=True)
+            best_sim = sorted_sims[0][1]
+            second_best_sim = sorted_sims[1][1] if len(sorted_sims) > 1 else 0
+            margin = best_sim - second_best_sim
             
             # Check if correct
             is_correct = "✓" if classification == expected else "✗"
@@ -82,9 +89,18 @@ def test_samples():
             print(f"{is_correct} \"{confession}\"")
             print(f"   → Predicted: {classification} | Expected: {expected}")
             
-            # Show similarities
-            sim_str = " | ".join([f"{cat}: {sim:.3f}" for cat, sim in similarities.items() if cat != "standard"])
+            # Show similarities and margin
+            sim_str = " | ".join([f"{cat}: {sim:.3f}" for cat, sim in trainable_sims.items()])
             print(f"   → Similarities: {sim_str}")
+            print(f"   → Margin: {margin:.3f} (required: {CLASSIFICATION_MARGIN})")
+            
+            # Show reasoning for standard classifications
+            if classification == "standard":
+                if best_sim < CLASSIFICATION_THRESHOLD:
+                    print(f"   → Reason: highest similarity ({best_sim:.3f}) below threshold ({CLASSIFICATION_THRESHOLD})")
+                elif margin < CLASSIFICATION_MARGIN:
+                    print(f"   → Reason: margin ({margin:.3f}) below required ({CLASSIFICATION_MARGIN})")
+            
             print()
             
         except Exception as e:
@@ -112,6 +128,7 @@ def interactive_test():
     model = fasttext.load_model(FASTTEXT_MODEL_PATH)
     
     print("\n=== Interactive Classification Test ===")
+    print(f"Threshold: {CLASSIFICATION_THRESHOLD} | Margin: {CLASSIFICATION_MARGIN}")
     print("Enter confessions to test (or 'quit' to exit):\n")
     
     while True:
@@ -126,9 +143,25 @@ def interactive_test():
         try:
             classification, similarities = classify_sentiment(confession, model)
             
+            # Calculate margin for display
+            trainable_sims = {k: v for k, v in similarities.items() if k != "standard"}
+            sorted_sims = sorted(trainable_sims.items(), key=lambda x: x[1], reverse=True)
+            best_sim = sorted_sims[0][1]
+            second_best_sim = sorted_sims[1][1] if len(sorted_sims) > 1 else 0
+            margin = best_sim - second_best_sim
+            
             print(f"   → Classification: {classification}")
-            sim_str = " | ".join([f"{cat}: {sim:.3f}" for cat, sim in similarities.items() if cat != "standard"])
+            sim_str = " | ".join([f"{cat}: {sim:.3f}" for cat, sim in trainable_sims.items()])
             print(f"   → Similarities: {sim_str}")
+            print(f"   → Margin: {margin:.3f} (required: {CLASSIFICATION_MARGIN})")
+            
+            # Show reasoning for standard classifications
+            if classification == "standard":
+                if best_sim < CLASSIFICATION_THRESHOLD:
+                    print(f"   → Reason: highest similarity ({best_sim:.3f}) below threshold ({CLASSIFICATION_THRESHOLD})")
+                elif margin < CLASSIFICATION_MARGIN:
+                    print(f"   → Reason: margin ({margin:.3f}) below required ({CLASSIFICATION_MARGIN})")
+            
             print()
             
         except Exception as e:

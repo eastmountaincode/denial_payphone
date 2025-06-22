@@ -17,6 +17,7 @@ import fasttext
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 FASTTEXT_MODEL_PATH = "/home/denial/denial_payphone/fasttext/crawl-80d-2M-subword.bin"
 CLASSIFICATION_THRESHOLD = 0.5
+CLASSIFICATION_MARGIN = 0.2
 
 # Centroid files
 SERIOUS_CENTROID_FILE = os.path.join(SCRIPT_DIR, "serious_centroid.pkl")
@@ -71,7 +72,7 @@ def load_centroids():
     return centroids
 
 def classify_text(text, model, centroids):
-    """Classify a single text input."""
+    """Classify a single text input with threshold and margin requirements."""
     if not text.strip():
         return "standard", {}
     
@@ -83,12 +84,18 @@ def classify_text(text, model, centroids):
     for name, centroid in centroids.items():
         similarities[name] = cosine_similarity(test_vec, centroid)
     
-    # Find best category
-    best_category = max(similarities, key=similarities.get)
-    best_similarity = similarities[best_category]
+    # Find the category with highest similarity and second highest
+    sorted_similarities = sorted(similarities.items(), key=lambda x: x[1], reverse=True)
+    best_category, best_similarity = sorted_similarities[0]
+    second_best_similarity = sorted_similarities[1][1]
     
-    # Apply threshold
-    if best_similarity >= CLASSIFICATION_THRESHOLD:
+    # Calculate margin between highest and second-highest
+    margin = best_similarity - second_best_similarity
+    
+    # Classification logic:
+    # 1. Highest similarity must be above threshold
+    # 2. Margin between highest and second-highest must be sufficient
+    if best_similarity >= CLASSIFICATION_THRESHOLD and margin >= CLASSIFICATION_MARGIN:
         classification = best_category
     else:
         classification = "standard"
@@ -123,6 +130,7 @@ def main():
         if sys.argv[1] == "--interactive":
             # Interactive mode
             print(f"\nClassification threshold: {CLASSIFICATION_THRESHOLD}")
+            print(f"Classification margin: {CLASSIFICATION_MARGIN}")
             print("Enter text to classify (or 'quit' to exit):\n")
             
             while True:
@@ -135,9 +143,25 @@ def main():
                         
                     classification, similarities = classify_text(text, model, centroids)
                     
+                    # Calculate margin for display
+                    sorted_sims = sorted(similarities.items(), key=lambda x: x[1], reverse=True)
+                    best_sim = sorted_sims[0][1]
+                    second_best_sim = sorted_sims[1][1]
+                    margin = best_sim - second_best_sim
+                    
                     print(f"Category: {classification}")
                     sim_str = " | ".join([f"{cat}: {sim:.3f}" for cat, sim in similarities.items()])
                     print(f"Similarities: {sim_str}")
+                    print(f"Margin: {margin:.3f} (required: {CLASSIFICATION_MARGIN})")
+                    
+                    # Show reasoning
+                    if classification == "standard":
+                        if best_sim < CLASSIFICATION_THRESHOLD:
+                            print(f"→ Standard: highest similarity ({best_sim:.3f}) below threshold ({CLASSIFICATION_THRESHOLD})")
+                        elif margin < CLASSIFICATION_MARGIN:
+                            print(f"→ Standard: margin ({margin:.3f}) below required ({CLASSIFICATION_MARGIN})")
+                    else:
+                        print(f"→ {classification}: meets both threshold and margin requirements")
                     print()
                     
                 except KeyboardInterrupt:
@@ -151,10 +175,26 @@ def main():
             try:
                 classification, similarities = classify_text(text, model, centroids)
                 
+                # Calculate margin for display
+                sorted_sims = sorted(similarities.items(), key=lambda x: x[1], reverse=True)
+                best_sim = sorted_sims[0][1]
+                second_best_sim = sorted_sims[1][1]
+                margin = best_sim - second_best_sim
+                
                 print(f"Text: \"{text}\"")
                 print(f"Category: {classification}")
                 sim_str = " | ".join([f"{cat}: {sim:.3f}" for cat, sim in similarities.items()])
                 print(f"Similarities: {sim_str}")
+                print(f"Margin: {margin:.3f} (required: {CLASSIFICATION_MARGIN})")
+                
+                # Show reasoning
+                if classification == "standard":
+                    if best_sim < CLASSIFICATION_THRESHOLD:
+                        print(f"→ Standard: highest similarity ({best_sim:.3f}) below threshold ({CLASSIFICATION_THRESHOLD})")
+                    elif margin < CLASSIFICATION_MARGIN:
+                        print(f"→ Standard: margin ({margin:.3f}) below required ({CLASSIFICATION_MARGIN})")
+                else:
+                    print(f"→ {classification}: meets both threshold and margin requirements")
                 
             except Exception as e:
                 print(f"Error: {e}")

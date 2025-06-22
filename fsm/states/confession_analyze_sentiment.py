@@ -19,6 +19,10 @@ AGGRESSIVE_CENTROID_FILE = os.path.join(SENTIMENT_DIR, "aggressive_centroid.pkl"
 # Similarity threshold for classification (if below, classify as "standard")
 CLASSIFICATION_THRESHOLD = 0.5
 
+# Minimum margin required between highest and second-highest similarity
+# If margin is smaller, classify as "standard" to avoid ambiguous classifications
+CLASSIFICATION_MARGIN = 0.2
+
 # Cached centroids (loaded once)
 _serious_centroid = None
 _silly_centroid = None
@@ -97,8 +101,10 @@ def load_precomputed_centroids():
 def classify_sentiment(transcript, model):
     """
     Classify transcript sentiment into one of 4 categories: serious, silly, aggressive, standard.
-    Uses threshold-based approach: if similarity to any trained category is above threshold,
-    assign that category; otherwise assign "standard" as fallback.
+    Uses threshold-based approach with margin requirement:
+    1. Highest similarity must be above CLASSIFICATION_THRESHOLD
+    2. Margin between highest and second-highest must be above CLASSIFICATION_MARGIN
+    If either condition fails, assign "standard" as fallback.
     Returns tuple: (classification, similarities_dict)
     """
     if not transcript.strip():
@@ -117,13 +123,18 @@ def classify_sentiment(transcript, model):
         "aggressive": cosine_similarity(test_vec, aggressive_centroid)
     }
     
-    # Find the category with highest similarity
-    best_category = max(similarities, key=similarities.get)
-    best_similarity = similarities[best_category]
+    # Find the category with highest similarity and second highest
+    sorted_similarities = sorted(similarities.items(), key=lambda x: x[1], reverse=True)
+    best_category, best_similarity = sorted_similarities[0]
+    second_best_similarity = sorted_similarities[1][1]
     
-    # If highest similarity is above threshold, assign that category
-    # Otherwise, assign "standard" as fallback
-    if best_similarity >= CLASSIFICATION_THRESHOLD:
+    # Calculate margin between highest and second-highest
+    margin = best_similarity - second_best_similarity
+    
+    # Classification logic:
+    # 1. Highest similarity must be above threshold
+    # 2. Margin between highest and second-highest must be sufficient
+    if best_similarity >= CLASSIFICATION_THRESHOLD and margin >= CLASSIFICATION_MARGIN:
         classification = best_category
     else:
         classification = "standard"
