@@ -174,20 +174,20 @@ def handle_confession_analyze_sentiment(engine):
     
     # Determine which audio file to play based on classification
     if classification == "serious":
-        audio_file = "post_confession_message.wav"  # TODO: Replace with serious_response.wav
+        audio_file = "post_confession_serious.wav"
         log_description = "serious response"
     elif classification == "silly":
-        audio_file = "post_confession_message.wav"  # TODO: Replace with silly_response.wav
+        audio_file = "post_confession_silly.wav"
         log_description = "silly response"
     elif classification == "aggressive":
-        audio_file = "post_confession_message.wav"  # TODO: Replace with aggressive_response.wav
+        audio_file = "post_confession_aggressive.wav"
         log_description = "aggressive response"
     elif classification == "standard":
-        audio_file = "post_confession_message.wav"  # TODO: Replace with standard_response.wav
+        audio_file = "post_confession_standard.wav"
         log_description = "standard response (fallback)"
     else:
-        # Fallback fallback
-        audio_file = "post_confession_message.wav"
+        # Fallback fallback - use standard if something goes wrong
+        audio_file = "post_confession_standard.wav"
         log_description = "default response"
     
     # Play the appropriate response
