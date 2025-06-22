@@ -4,28 +4,33 @@ This directory contains the sentiment analysis system for classifying confession
 
 ## Categories
 
-The system now classifies confessions into 4 distinct categories:
+The system classifies confessions into 4 categories (3 trainable + 1 fallback):
 
-1. **very_serious** - Deep, genuinely remorseful confessions
-   - Examples: "I hurt someone and I regret it deeply", "I have been struggling with addiction"
+### Trainable Categories (with examples):
 
-2. **standard** - Normal everyday confessions and mistakes  
-   - Examples: "I sometimes tell white lies to avoid conflict", "I gossiped about a friend behind their back"
+1. **serious** - Really serious confessions like serious crimes, self-harm
+   - Examples: "I killed somebody", "I've been thinking about hurting myself", "I committed a serious crime"
 
-3. **non_serious** - Light, minor infractions
-   - Examples: "I took a candy bar from my friend", "I ate the last cookie without asking"
+2. **silly** - Light, funny, minor infractions
+   - Examples: "I took a candy bar from my friend", "I ate the last cookie without asking", "I pretended to be sick to skip work"
 
-4. **fucking_around** - Dismissive, actively disregarding the confession prompt
-   - Examples: "This is dumb why are you asking me this", "I refuse to participate in this garbage"
+3. **aggressive** - Dismissive, hostile, actively disregarding the confession prompt
+   - Examples: "This is dumb why are you asking me this", "I refuse to participate in this garbage", "What kind of stupid question is that"
+
+### Fallback Category:
+
+4. **standard** - Default category when confidence is too low for other categories
+   - Used for normal everyday confessions that don't clearly fit serious/silly/aggressive
+   - No training examples needed - assigned when similarity scores are below threshold
 
 ## Files
 
-- `very_serious_examples.txt` - Training examples for very serious confessions
-- `standard_examples.txt` - Training examples for standard confessions  
-- `non_serious_examples.txt` - Training examples for non-serious confessions
-- `fucking_around_examples.txt` - Training examples for dismissive responses
-- `precompute_centroids.py` - Script to generate centroid vectors for classification
-- Generated centroid files: `*_centroid.pkl` (created by precompute script)
+- `serious_examples.txt` - Training examples for serious confessions
+- `silly_examples.txt` - Training examples for silly confessions
+- `aggressive_examples.txt` - Training examples for aggressive/dismissive responses
+- `precompute_centroids.py` - Script to generate centroid vectors for the 3 trainable categories
+- Generated centroid files: `serious_centroid.pkl`, `silly_centroid.pkl`, `aggressive_centroid.pkl`
+- Note: No `standard_examples.txt` - standard is fallback category
 
 ## Usage
 
@@ -40,7 +45,12 @@ The system now classifies confessions into 4 distinct categories:
 
 The system uses fastText word embeddings to:
 1. Convert each example sentence to a vector by averaging word vectors
-2. Compute centroid vectors for each category
-3. For new input, find the category with highest cosine similarity
+2. Compute centroid vectors for the 3 trainable categories (serious, silly, aggressive)
+3. For new input, calculate cosine similarity to each centroid
+4. If highest similarity is above threshold → assign that category
+5. If all similarities are below threshold → assign "standard" (fallback)
 
-This replaces the previous 2-category system (serious/silly) with a more nuanced 4-category approach that better captures the range of user responses. 
+This approach ensures that:
+- Clear cases (serious, silly, aggressive) are classified correctly
+- Default to "standard" when we can't classify the confession into one of the other categories
+- System is robust against edge cases 
