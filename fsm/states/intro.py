@@ -55,7 +55,7 @@ def handle_intro(engine):
         resp = "post_intro_user_did_not_speak.wav"
     
     if heard:
-        time.sleep(2.0)
+        time.sleep(1.0)
     if not play_and_log(resp, str(engine.audio_dir), engine.sensor, engine.session_id, "intro response hangup"):
         raise engine.SessionAbort
     

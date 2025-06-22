@@ -25,7 +25,7 @@ def handle_confession_inquiry(engine):
         SessionAbort: If user hangs up or audio playback fails
     """
     # Play the confession prompt
-    if not play_and_log("confession_prompt_for_kw_yn.wav", str(engine.audio_dir), engine.sensor, engine.session_id, "confession_prompt_for_kw"):
+    if not play_and_log("confession_prompt_for_kw_yn_v2.wav", str(engine.audio_dir), engine.sensor, engine.session_id, "confession_prompt_for_kw"):
         raise engine.SessionAbort
 
     kw_attempts = 0
@@ -54,7 +54,7 @@ def handle_confession_inquiry(engine):
                     raise engine.SessionAbort
                 print("[FSM]: Max silence count reached during confession inquiry - ending session")
                 return S.END
-            if not play_and_log("confession_kw_misunderstood_yn.wav", str(engine.audio_dir), engine.sensor, engine.session_id, "silence occurence"):
+            if not play_and_log("confession_kw_misunderstood_yn_v2.wav", str(engine.audio_dir), engine.sensor, engine.session_id, "silence occurence"):
                 raise engine.SessionAbort
             continue
             
