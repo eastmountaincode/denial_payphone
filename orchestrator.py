@@ -15,7 +15,7 @@ if UTIL_DIR not in sys.path:
 from proximity import (
     init_proximity_sensor,
     wait_for_off_hook,
-    wait_for_on_hook,
+    wait_for_on_hook_with_dialtone,
 )
 from session_fsm import run_session
 from audio import play_audio_file
@@ -48,7 +48,7 @@ class Orchestrator:
                         self.fasttext_model)
 
             print("[ORCHESTRATOR] Session ended. Waiting for phone to go back on-hook...")
-            wait_for_on_hook(self.sensor)
+            wait_for_on_hook_with_dialtone(self.sensor, "dial_tone_loop_v1.wav", AUDIO_DIR)
 
             print("[ORCHESTRATOR] On-hook detected. Returning to initial state...\n")
             play_audio_file("exit_sfx.wav", AUDIO_DIR)

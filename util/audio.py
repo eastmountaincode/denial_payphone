@@ -47,6 +47,49 @@ def play_audio_file(filename, AUDIO_DIR, is_on_hook: callable = None):
                 return False
     return True
 
+def play_audio_loop(filename, AUDIO_DIR, stop_condition: callable):
+    """
+    Play a .wav file in a continuous loop until stop_condition() returns True.
+    Checks the stop condition between chunks and between loops.
+    
+    Args:
+        filename: Audio file to play
+        AUDIO_DIR: Directory containing the audio file
+        stop_condition: Callable that returns True when playback should stop
+        
+    Returns:
+        True when stopped by condition
+    """
+    if not os.path.isabs(filename):
+        filepath = os.path.join(AUDIO_DIR, filename)
+    else:
+        filepath = filename
+    if not os.path.exists(filepath):
+        raise FileNotFoundError(f"Audio file not found: {filepath}")
+
+    data, _ = sf.read(filepath, dtype='float32')
+    channels = data.shape[1] if data.ndim > 1 else 1
+    chunk_size = 24000  # ~0.5s at 48kHz - checks condition every half second
+
+    with sd.OutputStream(samplerate=AUDIO_OUT_SAMPLE_RATE, channels=channels, device=AUDIO_DEVICE_OUT_INDEX) as stream:
+        while True:
+            # Check stop condition before starting each loop iteration
+            if stop_condition():
+                stream.abort()
+                return True
+                
+            # Play the audio file from start to end
+            start = 0
+            while start < len(data):
+                end = min(start + chunk_size, len(data))
+                stream.write(data[start:end])
+                start = end
+                
+                # Check stop condition between chunks
+                if stop_condition():
+                    stream.abort()
+                    return True
+
 def listen_for_amplitude(threshold, timeout, is_on_hook: callable):
     """
     Listen for any sound above a threshold on the default mic,
