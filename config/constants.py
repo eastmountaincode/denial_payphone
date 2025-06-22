@@ -29,8 +29,8 @@ AUDIO_SILENCE_THRESHOLD = 0.025  # RMS amplitude below this is considered silenc
 
 ######## Proximity sensor constants #########
 PROXIMITY_THRESHOLD = 800       # <= this is ON HOOK; > this is OFF HOOK
-OFF_HOOK_REQUIRED_DURATION = 2.5  # seconds proximity must stay high to count as off-hook
-ON_HOOK_REQUIRED_DURATION = 2.5   # seconds proximity must stay low to count as on-hook
+OFF_HOOK_REQUIRED_DURATION = 2.0  # seconds proximity must stay high to count as off-hook
+ON_HOOK_REQUIRED_DURATION = 2.0   # seconds proximity must stay low to count as on-hook
 POLL_INTERVAL = 0.1               # seconds between sensor polls
 
 
