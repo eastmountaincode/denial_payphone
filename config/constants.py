@@ -25,12 +25,12 @@ MAX_RECORDING_SILENCE_COUNT = 3
 KEYWORD_SILENCE_TIMEOUT_SEC = 10
 SPEECH_END_PAUSE_SEC = 2.3  # How long to wait after speech ends before transitioning states
 MAX_INITIAL_SILENCE_SEC = 13.0  # Max silence before prompting again or disconnecting when recording user long-form speech
-AUDIO_SILENCE_THRESHOLD = 0.02  # RMS amplitude below this is considered silence (0.0-1.0)
+AUDIO_SILENCE_THRESHOLD = 0.025  # RMS amplitude below this is considered silence (0.0-1.0)
 
 ######## Proximity sensor constants #########
 PROXIMITY_THRESHOLD = 800       # <= this is ON HOOK; > this is OFF HOOK
-OFF_HOOK_REQUIRED_DURATION = 3.0  # seconds proximity must stay high to count as off-hook
-ON_HOOK_REQUIRED_DURATION = 8.0   # seconds proximity must stay low to count as on-hook
+OFF_HOOK_REQUIRED_DURATION = 2.5  # seconds proximity must stay high to count as off-hook
+ON_HOOK_REQUIRED_DURATION = 2.5   # seconds proximity must stay low to count as on-hook
 POLL_INTERVAL = 0.1               # seconds between sensor polls
 
 
