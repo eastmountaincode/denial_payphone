@@ -67,7 +67,7 @@ class SessionEngine:
         insert_session(self.session_id)
         
         # Set the initial state to INTRO
-        state = S.INTRO
+        state = S.POST_CONFESSION_INFO_REQUEST
 
         # Each iteration executes the handler for the current state,
         # which may block (e.g., waiting for user input), and then returns the next state.

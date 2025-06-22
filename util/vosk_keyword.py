@@ -12,7 +12,7 @@ from config.constants import AUDIO_DEVICE_IN_INDEX, AUDIO_IN_SAMPLE_RATE, KEYWOR
 # Keyword grammar
 # ----------------------------------------------------------------------
 AFFIRMATIVE_WORDS = {
-    "yes", "yeah", "yep", "affirmative", "sure", "ok", "okay"
+    "yes", "yeah", "yep", "affirmative", "sure", "ok", "okay", "guess so"
 }
 NEGATIVE_WORDS = {
     "no", "nope", "nah", "negative"
@@ -60,11 +60,10 @@ def wait_for_keyword_response(vosk_model, on_hook_check=None) -> str:
                     if not recognised:
                         continue
 
-                    tokens = set(recognised.split())
-
-                    if tokens & AFFIRMATIVE_WORDS:
+                    # Check if any affirmative/negative phrase appears in the text
+                    if any(word in recognised for word in AFFIRMATIVE_WORDS):
                         return "affirmative"
-                    if tokens & NEGATIVE_WORDS:
+                    if any(word in recognised for word in NEGATIVE_WORDS):
                         return "negative"
                     return "not_understood"
                

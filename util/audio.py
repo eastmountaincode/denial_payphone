@@ -12,6 +12,9 @@ from config.constants import (
     AUDIO_IN_SAMPLE_RATE,
     AUDIO_OUT_SAMPLE_RATE,
     AUDIO_SAVE_SAMPLE_RATE,
+    SPEECH_END_PAUSE_SEC,
+    MAX_INITIAL_SILENCE_SEC,
+    AUDIO_SILENCE_THRESHOLD,
 )
   
 
@@ -73,9 +76,6 @@ def listen_for_amplitude(threshold, timeout, is_on_hook: callable):
                 return None
 
 def record_and_transcribe(vosk_model,
-                         threshold=0.02,
-                         max_initial_silence=13.0,
-                         trailing_silence=3.5,
                          on_hook_check=None):
     """
     Record audio while simultaneously transcribing with Vosk.
@@ -90,8 +90,8 @@ def record_and_transcribe(vosk_model,
     # Recording parameters
     block_dur = 0.18  # 180 ms blocks
     block_size = int(AUDIO_IN_SAMPLE_RATE * block_dur)
-    max_init_blocks = int(max_initial_silence / block_dur)
-    trailing_blocks = int(trailing_silence / block_dur)
+    max_init_blocks = int(MAX_INITIAL_SILENCE_SEC / block_dur)
+    trailing_blocks = int(SPEECH_END_PAUSE_SEC / block_dur)
     
     # Recording state
     speech_detected = False
@@ -135,9 +135,9 @@ def record_and_transcribe(vosk_model,
             # Check if we've detected speech for the first time
             if not speech_detected:
                 # Check both RMS threshold AND if Vosk has detected speech
-                if rms >= threshold or speech_detected_by_vosk.is_set():
+                if rms >= AUDIO_SILENCE_THRESHOLD or speech_detected_by_vosk.is_set():
                     speech_detected = True
-                    detection_method = "amplitude" if rms >= threshold else "transcription"
+                    detection_method = "amplitude" if rms >= AUDIO_SILENCE_THRESHOLD else "transcription"
                     print(f"[RECORDING]: Speech detected via {detection_method}...")
                 else:
                     max_init_blocks -= 1
@@ -154,12 +154,12 @@ def record_and_transcribe(vosk_model,
             # Check for silence to end recording (only after speech detected)
             if speech_detected:
                 # Check RMS silence
-                rms_silence = rms < threshold
+                rms_silence = rms < AUDIO_SILENCE_THRESHOLD
                 
-                # Check Vosk silence (no words for trailing_silence duration)
+                # Check Vosk silence (no words for SPEECH_END_PAUSE_SEC duration)
                 current_time = time.time()
                 vosk_silence = (last_word_time['time'] is None or 
-                               (current_time - last_word_time['time']) > trailing_silence)
+                               (current_time - last_word_time['time']) > SPEECH_END_PAUSE_SEC)
                 
                 # Only count as silence if BOTH RMS and Vosk indicate silence
                 if rms_silence and vosk_silence:
