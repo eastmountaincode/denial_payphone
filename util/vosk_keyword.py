@@ -12,10 +12,10 @@ from config.constants import AUDIO_DEVICE_IN_INDEX, AUDIO_IN_SAMPLE_RATE, KEYWOR
 # Keyword grammar
 # ----------------------------------------------------------------------
 AFFIRMATIVE_WORDS = {
-    "yes", "yeah", "yep", "affirmative", "sure", "ok", "okay", "guess so"
+    "yes", "yeah", "yep", "affirmative", "sure", "ok", "okay", "guess so", "uh huh"
 }
 NEGATIVE_WORDS = {
-    "no", "nope", "nah", "negative"
+    "no", "nope", "nah", "negative", "I guess not"
 }
 # ----------------------------------------------------------------------
 

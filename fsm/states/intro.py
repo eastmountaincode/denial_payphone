@@ -8,6 +8,7 @@ from audio import listen_for_amplitude
 from general_util import play_and_log
 from proximity import is_on_hook
 from log import log_event
+import time
 
 
 def handle_intro(engine):
@@ -51,6 +52,8 @@ def handle_intro(engine):
         log_event(engine.session_id, "no_amplitude_detected_after_intro")
         resp = "post_intro_user_did_not_speak.wav"
     
+    if heard:
+        time.sleep(2.0)
     if not play_and_log(resp, str(engine.audio_dir), engine.sensor, engine.session_id, "intro response hangup"):
         raise engine.SessionAbort
     
