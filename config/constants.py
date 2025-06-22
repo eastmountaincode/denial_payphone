@@ -23,7 +23,7 @@ MAX_KEYWORD_ATTEMPTS = 6
 MAX_KEYWORD_SILENCE_COUNT = 3
 MAX_RECORDING_SILENCE_COUNT = 3
 KEYWORD_SILENCE_TIMEOUT_SEC = 10
-SPEECH_END_PAUSE_SEC = 2.5  # How long to wait after speech ends before transitioning states
+SPEECH_END_PAUSE_SEC = 2.3  # How long to wait after speech ends before transitioning states
 MAX_INITIAL_SILENCE_SEC = 13.0  # Max silence before prompting again or disconnecting when recording user long-form speech
 AUDIO_SILENCE_THRESHOLD = 0.02  # RMS amplitude below this is considered silence (0.0-1.0)
 
