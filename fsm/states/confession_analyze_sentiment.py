@@ -10,18 +10,19 @@ import fsm.common  # Setup paths to util directory
 from general_util import play_and_log
 from log import log_event
 
-# Path to precomputed centroid files for 4 categories
+# Path to precomputed centroid files for 3 trainable categories
 SENTIMENT_DIR = os.path.join(fsm.common.UTIL_DIR, "sentiment")
-VERY_SERIOUS_CENTROID_FILE = os.path.join(SENTIMENT_DIR, "very_serious_centroid.pkl")
-STANDARD_CENTROID_FILE = os.path.join(SENTIMENT_DIR, "standard_centroid.pkl")
-NON_SERIOUS_CENTROID_FILE = os.path.join(SENTIMENT_DIR, "non_serious_centroid.pkl")
-FUCKING_AROUND_CENTROID_FILE = os.path.join(SENTIMENT_DIR, "fucking_around_centroid.pkl")
+SERIOUS_CENTROID_FILE = os.path.join(SENTIMENT_DIR, "serious_centroid.pkl")
+SILLY_CENTROID_FILE = os.path.join(SENTIMENT_DIR, "silly_centroid.pkl")
+AGGRESSIVE_CENTROID_FILE = os.path.join(SENTIMENT_DIR, "aggressive_centroid.pkl")
+
+# Similarity threshold for classification (if below, classify as "standard")
+CLASSIFICATION_THRESHOLD = 0.5
 
 # Cached centroids (loaded once)
-_very_serious_centroid = None
-_standard_centroid = None
-_non_serious_centroid = None
-_fucking_around_centroid = None
+_serious_centroid = None
+_silly_centroid = None
+_aggressive_centroid = None
 
 
 def sent_vec(text, model):
@@ -63,19 +64,17 @@ def cosine_similarity(vec1, vec2):
 
 def load_precomputed_centroids():
     """
-    Load precomputed centroids from pickle files for all 4 categories.
+    Load precomputed centroids from pickle files for the 3 trainable categories.
     """
-    global _very_serious_centroid, _standard_centroid, _non_serious_centroid, _fucking_around_centroid
+    global _serious_centroid, _silly_centroid, _aggressive_centroid
     
-    if (_very_serious_centroid is None or _standard_centroid is None or 
-        _non_serious_centroid is None or _fucking_around_centroid is None):
+    if (_serious_centroid is None or _silly_centroid is None or _aggressive_centroid is None):
         
         # Check if centroid files exist
         centroid_files = [
-            (VERY_SERIOUS_CENTROID_FILE, "Very serious"),
-            (STANDARD_CENTROID_FILE, "Standard"),
-            (NON_SERIOUS_CENTROID_FILE, "Non serious"),
-            (FUCKING_AROUND_CENTROID_FILE, "Fucking around")
+            (SERIOUS_CENTROID_FILE, "Serious"),
+            (SILLY_CENTROID_FILE, "Silly"),
+            (AGGRESSIVE_CENTROID_FILE, "Aggressive")
         ]
         
         for file_path, name in centroid_files:
@@ -83,45 +82,54 @@ def load_precomputed_centroids():
                 raise FileNotFoundError(f"{name} centroid file not found: {file_path}")
         
         # Load centroids
-        with open(VERY_SERIOUS_CENTROID_FILE, 'rb') as f:
-            _very_serious_centroid = pickle.load(f)
-        
-        with open(STANDARD_CENTROID_FILE, 'rb') as f:
-            _standard_centroid = pickle.load(f)
+        with open(SERIOUS_CENTROID_FILE, 'rb') as f:
+            _serious_centroid = pickle.load(f)
             
-        with open(NON_SERIOUS_CENTROID_FILE, 'rb') as f:
-            _non_serious_centroid = pickle.load(f)
+        with open(SILLY_CENTROID_FILE, 'rb') as f:
+            _silly_centroid = pickle.load(f)
             
-        with open(FUCKING_AROUND_CENTROID_FILE, 'rb') as f:
-            _fucking_around_centroid = pickle.load(f)
+        with open(AGGRESSIVE_CENTROID_FILE, 'rb') as f:
+            _aggressive_centroid = pickle.load(f)
     
-    return _very_serious_centroid, _standard_centroid, _non_serious_centroid, _fucking_around_centroid
+    return _serious_centroid, _silly_centroid, _aggressive_centroid
 
 
 def classify_sentiment(transcript, model):
     """
-    Classify transcript sentiment into one of 4 categories: very_serious, standard, non_serious, fucking_around.
+    Classify transcript sentiment into one of 4 categories: serious, silly, aggressive, standard.
+    Uses threshold-based approach: if similarity to any trained category is above threshold,
+    assign that category; otherwise assign "standard" as fallback.
     Returns tuple: (classification, similarities_dict)
     """
     if not transcript.strip():
         return "standard", {}
     
-    # Load precomputed centroids
-    very_serious_centroid, standard_centroid, non_serious_centroid, fucking_around_centroid = load_precomputed_centroids()
+    # Load precomputed centroids for the 3 trainable categories
+    serious_centroid, silly_centroid, aggressive_centroid = load_precomputed_centroids()
     
     # Convert transcript to vector
     test_vec = sent_vec(transcript, model)
     
-    # Calculate similarities to all 4 centroids
+    # Calculate similarities to the 3 trained centroids
     similarities = {
-        "very_serious": cosine_similarity(test_vec, very_serious_centroid),
-        "standard": cosine_similarity(test_vec, standard_centroid),
-        "non_serious": cosine_similarity(test_vec, non_serious_centroid),
-        "fucking_around": cosine_similarity(test_vec, fucking_around_centroid)
+        "serious": cosine_similarity(test_vec, serious_centroid),
+        "silly": cosine_similarity(test_vec, silly_centroid),
+        "aggressive": cosine_similarity(test_vec, aggressive_centroid)
     }
     
     # Find the category with highest similarity
-    classification = max(similarities, key=similarities.get)
+    best_category = max(similarities, key=similarities.get)
+    best_similarity = similarities[best_category]
+    
+    # If highest similarity is above threshold, assign that category
+    # Otherwise, assign "standard" as fallback
+    if best_similarity >= CLASSIFICATION_THRESHOLD:
+        classification = best_category
+    else:
+        classification = "standard"
+        
+    # Add standard similarity for logging (always 0 since it's fallback)
+    similarities["standard"] = 0.0 if classification != "standard" else 1.0
     
     return classification, similarities
 
@@ -165,20 +173,20 @@ def handle_confession_analyze_sentiment(engine):
     print(f"[FSM]: Sentiment classification: {classification}")
     
     # Determine which audio file to play based on classification
-    if classification == "very_serious":
-        audio_file = "post_confession_message.wav"  # TODO: Replace with very_serious_response.wav
-        log_description = "very serious response"
+    if classification == "serious":
+        audio_file = "post_confession_message.wav"  # TODO: Replace with serious_response.wav
+        log_description = "serious response"
+    elif classification == "silly":
+        audio_file = "post_confession_message.wav"  # TODO: Replace with silly_response.wav
+        log_description = "silly response"
+    elif classification == "aggressive":
+        audio_file = "post_confession_message.wav"  # TODO: Replace with aggressive_response.wav
+        log_description = "aggressive response"
     elif classification == "standard":
         audio_file = "post_confession_message.wav"  # TODO: Replace with standard_response.wav
-        log_description = "standard response"
-    elif classification == "non_serious":
-        audio_file = "post_confession_message.wav"  # TODO: Replace with non_serious_response.wav
-        log_description = "non serious response"
-    elif classification == "fucking_around":
-        audio_file = "post_confession_message.wav"  # TODO: Replace with fucking_around_response.wav
-        log_description = "fucking around response"
+        log_description = "standard response (fallback)"
     else:
-        # Fallback
+        # Fallback fallback
         audio_file = "post_confession_message.wav"
         log_description = "default response"
     
