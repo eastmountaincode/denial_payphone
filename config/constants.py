@@ -28,7 +28,7 @@ MAX_INITIAL_SILENCE_SEC = 13.0  # Max silence before prompting again or disconne
 AUDIO_SILENCE_THRESHOLD = 0.02  # RMS amplitude below this is considered silence (0.0-1.0)
 
 ######## Proximity sensor constants #########
-PROXIMITY_THRESHOLD = 25       # >= this is ON HOOK; < this is OFF HOOK
+PROXIMITY_THRESHOLD = 800       # >= this is ON HOOK; < this is OFF HOOK
 OFF_HOOK_REQUIRED_DURATION = 3.0  # seconds proximity must stay low to count as off-hook
 ON_HOOK_REQUIRED_DURATION = 8.0   # seconds proximity must stay high to count as on-hook
 POLL_INTERVAL = 0.1               # seconds between sensor polls
