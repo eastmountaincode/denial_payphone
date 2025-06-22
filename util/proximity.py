@@ -13,14 +13,14 @@ def init_proximity_sensor():
 
 def wait_for_off_hook(sensor):
     """
-    Wait until proximity < PROXIMITY_THRESHOLD for OFF_HOOK_REQUIRED_DURATION.
+    Wait until proximity > PROXIMITY_THRESHOLD for OFF_HOOK_REQUIRED_DURATION.
     """
     start_time = None
     while True:
         prox = sensor.proximity
         print(f"\rProximity: {prox}", end="", flush=True)
 
-        if prox < PROXIMITY_THRESHOLD:
+        if prox > PROXIMITY_THRESHOLD:
             if start_time is None:
                 start_time = time.time()
             elif time.time() - start_time >= OFF_HOOK_REQUIRED_DURATION:
@@ -31,12 +31,12 @@ def wait_for_off_hook(sensor):
 
 def wait_for_on_hook(sensor):
     """
-    Wait until proximity >= PROXIMITY_THRESHOLD for ON_HOOK_REQUIRED_DURATION.
+    Wait until proximity <= PROXIMITY_THRESHOLD for ON_HOOK_REQUIRED_DURATION.
     """
     start_time = None
     while True:
         prox = sensor.proximity
-        if prox >= PROXIMITY_THRESHOLD:
+        if prox <= PROXIMITY_THRESHOLD:
             if start_time is None:
                 start_time = time.time()
             elif time.time() - start_time >= ON_HOOK_REQUIRED_DURATION:
@@ -47,8 +47,8 @@ def wait_for_on_hook(sensor):
 
 def is_on_hook(sensor):
     """
-    Returns True if proximity sensor reads "on hook" (>= threshold).
+    Returns True if proximity sensor reads "on hook" (<= threshold).
     Pass in your sensor object.
     """
-    return sensor.proximity >= PROXIMITY_THRESHOLD
+    return sensor.proximity <= PROXIMITY_THRESHOLD
 
