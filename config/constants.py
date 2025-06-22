@@ -35,7 +35,7 @@ POLL_INTERVAL = 0.1               # seconds between sensor polls
 
 ######## Sentiment classification constants #########
 CLASSIFICATION_THRESHOLD = 0.5   # Minimum similarity to assign a specific sentiment category
-CLASSIFICATION_MARGIN = 0.14     # Minimum margin between highest and second-highest similarity
+CLASSIFICATION_MARGIN = 0.1     # Minimum margin between highest and second-highest similarity
 
 
 
