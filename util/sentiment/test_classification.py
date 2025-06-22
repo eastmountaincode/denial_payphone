@@ -17,13 +17,17 @@ import fasttext
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 UTIL_DIR = os.path.dirname(SCRIPT_DIR)
 BASE_DIR = os.path.dirname(UTIL_DIR)
+CONFIG_DIR = os.path.join(BASE_DIR, "config")
 sys.path.insert(0, UTIL_DIR)
 sys.path.insert(0, BASE_DIR)
+sys.path.insert(0, CONFIG_DIR)
+
+from constants import CLASSIFICATION_THRESHOLD, CLASSIFICATION_MARGIN
 
 FASTTEXT_MODEL_PATH = "/home/denial/denial_payphone/fasttext/crawl-80d-2M-subword.bin"
 
 # Import from the actual FSM state module
-from fsm.states.confession_analyze_sentiment import classify_sentiment, CLASSIFICATION_THRESHOLD, CLASSIFICATION_MARGIN
+from fsm.states.confession_analyze_sentiment import classify_sentiment
 
 def test_samples():
     """Test a variety of sample confessions"""

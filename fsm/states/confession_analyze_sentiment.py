@@ -9,19 +9,13 @@ import fsm.common  # Setup paths to util directory
 
 from general_util import play_and_log
 from log import log_event
+from config.constants import CLASSIFICATION_THRESHOLD, CLASSIFICATION_MARGIN
 
 # Path to precomputed centroid files for 3 trainable categories
 SENTIMENT_DIR = os.path.join(fsm.common.UTIL_DIR, "sentiment")
 SERIOUS_CENTROID_FILE = os.path.join(SENTIMENT_DIR, "serious_centroid.pkl")
 SILLY_CENTROID_FILE = os.path.join(SENTIMENT_DIR, "silly_centroid.pkl")
 AGGRESSIVE_CENTROID_FILE = os.path.join(SENTIMENT_DIR, "aggressive_centroid.pkl")
-
-# Similarity threshold for classification (if below, classify as "standard")
-CLASSIFICATION_THRESHOLD = 0.5
-
-# Minimum margin required between highest and second-highest similarity
-# If margin is smaller, classify as "standard" to avoid ambiguous classifications
-CLASSIFICATION_MARGIN = 0.15
 
 # Cached centroids (loaded once)
 _serious_centroid = None

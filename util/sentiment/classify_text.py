@@ -13,11 +13,17 @@ import numpy as np
 import pickle
 import fasttext
 
-# Configuration
+# Add config directory to path for constants
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+UTIL_DIR = os.path.dirname(SCRIPT_DIR)
+BASE_DIR = os.path.dirname(UTIL_DIR)
+CONFIG_DIR = os.path.join(BASE_DIR, "config")
+sys.path.insert(0, CONFIG_DIR)
+
+from constants import CLASSIFICATION_THRESHOLD, CLASSIFICATION_MARGIN
+
+# Configuration
 FASTTEXT_MODEL_PATH = "/home/denial/denial_payphone/fasttext/crawl-80d-2M-subword.bin"
-CLASSIFICATION_THRESHOLD = 0.5
-CLASSIFICATION_MARGIN = 0.2
 
 # Centroid files
 SERIOUS_CENTROID_FILE = os.path.join(SCRIPT_DIR, "serious_centroid.pkl")

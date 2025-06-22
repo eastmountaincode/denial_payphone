@@ -33,6 +33,10 @@ OFF_HOOK_REQUIRED_DURATION = 2.0  # seconds proximity must stay high to count as
 ON_HOOK_REQUIRED_DURATION = 2.0   # seconds proximity must stay low to count as on-hook
 POLL_INTERVAL = 0.1               # seconds between sensor polls
 
+######## Sentiment classification constants #########
+CLASSIFICATION_THRESHOLD = 0.5   # Minimum similarity to assign a specific sentiment category
+CLASSIFICATION_MARGIN = 0.15     # Minimum margin between highest and second-highest similarity
+
 
 
 
